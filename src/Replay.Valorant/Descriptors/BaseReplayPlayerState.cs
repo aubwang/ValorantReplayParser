@@ -12,11 +12,21 @@ internal sealed class BaseReplayPlayerState : ExportGroupDescriptor<BaseReplayPl
     public uint RemoteRole { get; set; }
     public uint Owner { get; set; }
     public bool OnlySpectator { get; set; }
+    public ValorantRawPayload? AllPlayersObfuscatedPlayerInformation { get; set; }
+    public ValorantRawPayload? SubjectUniqueId { get; set; }
+    public bool IsAfk { get; set; }
+    public byte ConnectionStatus { get; set; }
 
     protected override void Configure()
     {
         AddProperty(x => x.RemoteRole).ObjectNetGuid();
         AddProperty(x => x.Owner).ObjectNetGuid();
         AddProperty("bOnlySpectator", x => x.OnlySpectator).Bool();
+        AddProperty(x => x.AllPlayersObfuscatedPlayerInformation)
+            .Decode(ValorantPayloadDecoders.RawPayload("TArray<FObfuscatedPlayerInformation>"));
+        AddProperty(x => x.SubjectUniqueId)
+            .Decode(ValorantPayloadDecoders.RawPayload("FUniqueNetIdRepl"));
+        AddProperty("bIsAfk", x => x.IsAfk).BoolOrRaw();
+        AddProperty(x => x.ConnectionStatus).EnumByteOrRaw();
     }
 }

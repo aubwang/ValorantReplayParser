@@ -14,6 +14,8 @@ internal sealed class AresAttributeSetDescriptor : ExportGroupDescriptor<AresAtt
     public float Shield { get; set; }
     public float MaxShield { get; set; }
     public float Damage { get; set; }
+    public float BaseValue { get; set; }
+    public float CurrentValue { get; set; }
 
     protected override void Configure()
     {
@@ -22,5 +24,7 @@ internal sealed class AresAttributeSetDescriptor : ExportGroupDescriptor<AresAtt
         AddProperty(x => x.Shield, ExportCategory.Ability).Float();
         AddProperty(x => x.MaxShield, ExportCategory.Ability).Float();
         AddProperty(x => x.Damage, ExportCategory.Ability).Float();
+        AddProperty(x => x.BaseValue, ExportCategory.Ability).FloatOrRaw();
+        AddProperty(x => x.CurrentValue, ExportCategory.Ability).FloatOrRaw();
     }
 }

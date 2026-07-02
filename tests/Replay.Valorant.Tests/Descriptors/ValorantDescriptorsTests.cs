@@ -50,4 +50,137 @@ public class ValorantDescriptorsTests
 
         Assert.That(actualAgentPaths, Is.EqualTo(expectedAgentPaths));
     }
+
+    [Test]
+    public void CreateCatalog_IncludesRequestedGameplayExportDescriptors()
+    {
+        string[] expectedPaths =
+        [
+            "/Game/GameModes/Bomb/BombPlayerState.BombPlayerState_C",
+            "/Game/GameModes/Common/BaseReplayPlayerState.BaseReplayPlayerState_C",
+            "/Game/GameModes/Bomb/BombGameState.BombGameState_C",
+            "/Game/GameModes/Bomb/Bomb_CombatReportComponent.Bomb_CombatReportComponent_C",
+            "/Script/ShooterGame.AresInventory",
+            "/Script/ShooterGame.EquippableStateMachineComponent",
+            "/Script/ShooterGame.AmmoComponent",
+            "/Script/ShooterGame.AresAttributeSet",
+            "/Script/ShooterGame.ChildDamageSectionComponent",
+            "/Script/ShooterGame.ChildRegionDamageSectionComponent",
+            "/Script/ShooterGame.AttachedDamageSectionComponent",
+            "/Script/ShooterGame.FiringStateComponent",
+        ];
+
+        var descriptors = ValorantDescriptors.CreateCatalog().ExportGroupDescriptors;
+        var descriptorPaths = descriptors
+            .Select(descriptor => descriptor.Path)
+            .ToHashSet(StringComparer.Ordinal);
+
+        Assert.Multiple(() =>
+        {
+            foreach (var path in expectedPaths)
+            {
+                var descriptor = descriptors.Single(d => d.Path == path);
+                Assert.That(descriptorPaths.Contains(path), Is.True, path);
+                Assert.That(descriptor.Fields, Is.Not.Empty, path);
+                Assert.That(descriptor.Fields.All(field => field.Decoder is not null), Is.True, path);
+            }
+        });
+    }
+
+    [Test]
+    public void CreateCatalog_IncludesRequestedClassNetCacheFunctions()
+    {
+        var cacheDescriptors = ValorantDescriptors.CreateCatalog()
+            .ClassNetCacheDescriptors
+            .ToDictionary(descriptor => descriptor.Path, StringComparer.Ordinal);
+
+        Assert.Multiple(() =>
+        {
+            AssertFunctions(
+                cacheDescriptors["/Game/Characters/_Core/BaseReplayController.BaseReplayController_C_ClassNetCache"],
+                "ClientReplayReceiveInputEventProcessingCapture",
+                "ReplaysClientReceiveRemoteCharacterUpdatesSingleArrayNoAutonomous",
+                "ClientGamePhaseBegin",
+                "ClientGamePhaseEnded");
+
+            AssertFunctions(
+                cacheDescriptors["/Game/GameModes/Bomb/BombGameState.BombGameState_C_ClassNetCache"],
+                "ClientBuyPhaseEnd",
+                "ClientRoundStart",
+                "Multicast Side Switch Event",
+                "ClientResetRound",
+                "MulticastEndRound",
+                "MulticastEnterPlayspace",
+                "MulticastReceivePlayerResurrectEvent",
+                "MulticastReceivePlayerTemporaryDeathEvent_Base",
+                "MulticastReceivePlayerTemporaryDeathEvent_Point",
+                "MulticastSetPhase",
+                "MulticastResetForRespawn");
+        });
+    }
+
+    [Test]
+    public void CreateCatalog_DecodesRoundLifecycleRpcFields()
+    {
+        var functions = ValorantDescriptors.CreateCatalog()
+            .ClassNetCacheDescriptors
+            .Single(descriptor => descriptor.Path == "/Game/GameModes/Bomb/BombGameState.BombGameState_C_ClassNetCache")
+            .FunctionFields
+            .ToDictionary(function => function.Name, StringComparer.Ordinal);
+
+        Assert.Multiple(() =>
+        {
+            AssertDecodedRpcFields(functions["MulticastReceivePlayerResurrectEvent"],
+                "ResurrectorPlayer",
+                "ResurrectedPlayer");
+            AssertDecodedRpcFields(functions["MulticastReceivePlayerTemporaryDeathEvent_Base"],
+                "DamagerPlayer",
+                "DownedPlayer");
+            AssertDecodedRpcFields(functions["MulticastReceivePlayerTemporaryDeathEvent_Point"],
+                "DamagerPlayer",
+                "DownedPlayer");
+            AssertDecodedRpcFields(functions["MulticastResetForRespawn"], "ShooterCharacter");
+        });
+    }
+
+    [Test]
+    public void CreateCatalog_IncludesFiringStateAttackVector16FromDump()
+    {
+        var descriptor = ValorantDescriptors.CreateCatalog()
+            .ExportGroupDescriptors
+            .Single(descriptor => descriptor.Path == "/Script/ShooterGame.FiringStateComponent");
+
+        var exportNames = descriptor.Fields
+            .Select(field => field.ExportName)
+            .ToHashSet(StringComparer.Ordinal);
+
+        Assert.That(exportNames.Contains("FiringState.AttackVector.16"), Is.True);
+    }
+
+    private static void AssertDecodedRpcFields(RpcDescriptor descriptor, params string[] fieldNames)
+    {
+        Assert.That(descriptor.Decoder, Is.Null, $"{descriptor.Name} should use named function fields");
+
+        var fieldsByName = descriptor.Fields
+            .Where(field => field.PropertyName is not null)
+            .ToDictionary(field => field.PropertyName!, StringComparer.Ordinal);
+
+        foreach (var fieldName in fieldNames)
+        {
+            Assert.That(fieldsByName.ContainsKey(fieldName), Is.True, $"{descriptor.Name}:{fieldName}");
+            Assert.That(fieldsByName[fieldName].Decoder, Is.Not.Null, $"{descriptor.Name}:{fieldName}");
+        }
+    }
+
+    private static void AssertFunctions(ClassNetCacheDescriptor descriptor, params string[] functionNames)
+    {
+        var actualNames = descriptor.FunctionFields
+            .Select(function => function.Name)
+            .ToHashSet(StringComparer.Ordinal);
+
+        foreach (var functionName in functionNames)
+        {
+            Assert.That(actualNames.Contains(functionName), Is.True, $"{descriptor.Path}:{functionName}");
+        }
+    }
 }

@@ -8,8 +8,12 @@ public static class PrimitiveDecoders
     public static readonly IFieldDecoder Int32 = new Int32Decoder();
     public static readonly IFieldDecoder UInt32 = new UInt32Decoder();
     public static readonly IFieldDecoder Float = new FloatDecoder();
+    public static readonly IFieldDecoder Double = new DoubleDecoder();
     public static readonly IFieldDecoder Bool = new BoolDecoder();
     public static readonly IFieldDecoder Byte = new ByteDecoder();
+    public static readonly IFieldDecoder EnumByte = Byte;
+    public static readonly IFieldDecoder FString = new FStringDecoder();
+    public static readonly IFieldDecoder FName = new FNameDecoder();
     public static readonly IFieldDecoder ObjectNetGuid = new ObjectNetGuidDecoder();
     public static readonly IFieldDecoder Vector = new DoubleVectorDecoder();
     public static readonly IFieldDecoder VectorFloat = new FloatVectorDecoder();
@@ -19,6 +23,8 @@ public static class PrimitiveDecoders
     public static readonly IFieldDecoder VectorNetQuantize100 = new QuantizedVectorDecoder(scaleFactor: 100);
     public static readonly IFieldDecoder VectorNetQuantizeNormal = new FixedNormalVectorDecoder();
     public static readonly IFieldDecoder Skip = new SkipDecoder();
+
+    public static IFieldDecoder ByteArray(int maxBytes) => new ByteArrayDecoder(maxBytes);
 
     private sealed class FloatVectorDecoder : IFieldDecoder
     {
@@ -69,6 +75,12 @@ public static class PrimitiveDecoders
             DecodedFieldValue.FromFloat(archive.ReadSingle());
     }
 
+    private sealed class DoubleDecoder : IFieldDecoder
+    {
+        public DecodedFieldValue Decode(ref FieldDecodeContext context, FBitArchive archive) =>
+            DecodedFieldValue.FromDouble(archive.ReadDouble());
+    }
+
     private sealed class BoolDecoder : IFieldDecoder
     {
         public DecodedFieldValue Decode(ref FieldDecodeContext context, FBitArchive archive) =>
@@ -81,10 +93,54 @@ public static class PrimitiveDecoders
             DecodedFieldValue.FromByte(archive.ReadByte());
     }
 
+    private sealed class FStringDecoder : IFieldDecoder
+    {
+        public DecodedFieldValue Decode(ref FieldDecodeContext context, FBitArchive archive) =>
+            DecodedFieldValue.FromString(archive.ReadFString());
+    }
+
+    private sealed class FNameDecoder : IFieldDecoder
+    {
+        public DecodedFieldValue Decode(ref FieldDecodeContext context, FBitArchive archive) =>
+            DecodedFieldValue.FromString(archive.ReadFName());
+    }
+
     private sealed class ObjectNetGuidDecoder : IFieldDecoder
     {
         public DecodedFieldValue Decode(ref FieldDecodeContext context, FBitArchive archive) =>
             DecodedFieldValue.FromNetGuid(archive.ReadIntPacked());
+    }
+
+    private sealed class ByteArrayDecoder : IFieldDecoder
+    {
+        private readonly int _maxBytes;
+
+        public ByteArrayDecoder(int maxBytes)
+        {
+            if (maxBytes < 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(maxBytes), maxBytes, null);
+            }
+
+            _maxBytes = maxBytes;
+        }
+
+        public DecodedFieldValue Decode(ref FieldDecodeContext context, FBitArchive archive)
+        {
+            var count = archive.ReadIntPacked();
+            if (count > _maxBytes)
+            {
+                throw new ArchiveReadException(
+                    ArchiveErrorCode.InvalidCount,
+                    nameof(ByteArrayDecoder),
+                    archive.Position,
+                    archive.Length,
+                    count,
+                    $"Byte array field '{context.FieldName ?? "<unknown>"}' declared {count} bytes; maximum is {_maxBytes}.");
+            }
+
+            return DecodedFieldValue.FromObject(archive.ReadBytes(checked((int)count)).ToArray());
+        }
     }
 
     private sealed class SkipDecoder : IFieldDecoder

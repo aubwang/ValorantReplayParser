@@ -152,7 +152,7 @@ public class RemoteCharacterMovementTests
     {
         var descriptor = ValorantDescriptors.CreateCatalog()
             .ClassNetCacheDescriptors
-            .Single(descriptor => descriptor.Path == "/Game/Characters/BaseReplayController.BaseReplayController_C_ClassNetCache");
+            .Single(descriptor => descriptor.Path == "/Game/Characters/_Core/BaseReplayController.BaseReplayController_C_ClassNetCache");
         var rpc = descriptor.FunctionFields.Single(function =>
             function.Name == "ReplaysClientReceiveRemoteCharacterUpdatesSingleArrayNoAutonomous");
         return (IRpcDecoder)rpc.Decoder!;

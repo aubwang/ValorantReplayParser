@@ -13,11 +13,26 @@ public static class DescriptorBuilderDecoderExtensions
     public static FieldDescriptorBuilder Float(this FieldDescriptorBuilder builder) =>
         builder.Decode(PrimitiveDecoders.Float);
 
+    public static FieldDescriptorBuilder Double(this FieldDescriptorBuilder builder) =>
+        builder.Decode(PrimitiveDecoders.Double);
+
     public static FieldDescriptorBuilder Bool(this FieldDescriptorBuilder builder) =>
         builder.Decode(PrimitiveDecoders.Bool);
 
     public static FieldDescriptorBuilder Byte(this FieldDescriptorBuilder builder) =>
         builder.Decode(PrimitiveDecoders.Byte);
+
+    public static FieldDescriptorBuilder EnumByte(this FieldDescriptorBuilder builder) =>
+        builder.Decode(PrimitiveDecoders.EnumByte);
+
+    public static FieldDescriptorBuilder FString(this FieldDescriptorBuilder builder) =>
+        builder.Decode(PrimitiveDecoders.FString);
+
+    public static FieldDescriptorBuilder FName(this FieldDescriptorBuilder builder) =>
+        builder.Decode(PrimitiveDecoders.FName);
+
+    public static FieldDescriptorBuilder ByteArray(this FieldDescriptorBuilder builder, int maxBytes) =>
+        builder.Decode(PrimitiveDecoders.ByteArray(maxBytes));
 
     public static FieldDescriptorBuilder ObjectNetGuid(this FieldDescriptorBuilder builder) =>
         builder.Decode(PrimitiveDecoders.ObjectNetGuid);

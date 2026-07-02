@@ -69,12 +69,23 @@ public static class ValorantDescriptors
 
         catalog.Add(new AresAbilitySystemComponentDescriptor());
         catalog.Add(new AresAttributeSetDescriptor());
+        catalog.Add(new AmmoComponentDescriptor());
+        catalog.Add(new AresInventoryDescriptor());
+        catalog.Add(new AttachedDamageSectionComponentDescriptor());
+        catalog.Add(new BombCombatReportComponentDescriptor());
+        catalog.Add(new BombGameStateDescriptor());
+        catalog.Add(new BombPlayerStateDescriptor());
+        catalog.Add(new ChildDamageSectionComponentDescriptor());
+        catalog.Add(new ChildRegionDamageSectionComponentDescriptor());
+        catalog.Add(new EquippableStateMachineComponentDescriptor());
+        catalog.Add(new FiringStateComponentDescriptor());
         catalog.Add(new RemoteCharacterUpdateDescriptor());
         catalog.Add(new BaseReplayPlayerState());
         catalog.Add(new BaseReplayControllerDescriptor());
         catalog.Add(new TripWireAbilityDescriptor());
 
         catalog.Add(new BaseReplayControllerClassNetCacheDescriptor());
+        catalog.Add(new BombGameStateClassNetCacheDescriptor());
         catalog.Add(new AresAbilitySystemComponentClassNetCacheDescriptor());
 
         return catalog;

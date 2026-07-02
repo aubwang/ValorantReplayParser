@@ -31,19 +31,23 @@ public sealed class RpcDescriptorBuilder
         Decoder = decoder;
     }
 
-    public void AddField(string exportName,
+    public FieldDescriptorBuilder AddField(string exportName,
         string propertyName,
         ExportCategory categories = ExportCategory.None)
     {
-        _fieldBuilders.Add(new FieldDescriptorBuilder(exportName, propertyName, handle: null, categories));
+        var builder = new FieldDescriptorBuilder(exportName, propertyName, handle: null, categories);
+        _fieldBuilders.Add(builder);
+        return builder;
     }
 
-    public void AddFieldHandle(
+    public FieldDescriptorBuilder AddFieldHandle(
         uint handle,
         string propertyName,
         ExportCategory categories = ExportCategory.None)
     {
-        _fieldBuilders.Add(new FieldDescriptorBuilder(exportName: null, propertyName, handle, categories));
+        var builder = new FieldDescriptorBuilder(exportName: null, propertyName, handle, categories);
+        _fieldBuilders.Add(builder);
+        return builder;
     }
 
     internal RpcDescriptor Build()

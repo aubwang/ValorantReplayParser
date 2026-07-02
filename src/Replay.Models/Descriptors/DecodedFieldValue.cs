@@ -11,7 +11,9 @@ public readonly record struct DecodedFieldValue
         int int32Value = 0,
         uint uint32Value = 0,
         float floatValue = 0,
+        double doubleValue = 0,
         uint netGuidValue = 0,
+        string? stringValue = null,
         FVector vectorValue = default,
         FRotator rotatorValue = default,
         object? objectValue = null)
@@ -22,7 +24,9 @@ public readonly record struct DecodedFieldValue
         Int32Value = int32Value;
         UInt32Value = uint32Value;
         FloatValue = floatValue;
+        DoubleValue = doubleValue;
         NetGuidValue = netGuidValue;
+        StringValue = stringValue;
         VectorValue = vectorValue;
         RotatorValue = rotatorValue;
         ObjectValue = objectValue;
@@ -42,7 +46,11 @@ public readonly record struct DecodedFieldValue
 
     public float FloatValue { get; }
 
+    public double DoubleValue { get; }
+
     public uint NetGuidValue { get; }
+
+    public string? StringValue { get; }
 
     public FVector VectorValue { get; }
 
@@ -62,7 +70,11 @@ public readonly record struct DecodedFieldValue
 
     public static DecodedFieldValue FromFloat(float value) => new(DecodedFieldValueKind.Float, floatValue: value);
 
+    public static DecodedFieldValue FromDouble(double value) => new(DecodedFieldValueKind.Double, doubleValue: value);
+
     public static DecodedFieldValue FromNetGuid(uint value) => new(DecodedFieldValueKind.NetGuid, netGuidValue: value);
+
+    public static DecodedFieldValue FromString(string value) => new(DecodedFieldValueKind.String, stringValue: value);
 
     public static DecodedFieldValue FromVector(FVector value) => new(DecodedFieldValueKind.Vector, vectorValue: value);
 
@@ -79,6 +91,8 @@ public enum DecodedFieldValueKind
     Int32,
     UInt32,
     Float,
+    Double,
+    String,
     NetGuid,
     Vector,
     Rotator,
