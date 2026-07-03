@@ -26,4 +26,8 @@
         <ProjectReference Include="..\..\src\Replay.Unreal\Replay.Unreal.csproj"/>
     </ItemGroup>
 
+    <ItemGroup>
+      <Folder Include="Readers\" />
+    </ItemGroup>
+
 </Project>

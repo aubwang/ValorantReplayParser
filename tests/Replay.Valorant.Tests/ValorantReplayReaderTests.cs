@@ -8,7 +8,7 @@ using Replay.Models.Unreal;
 using Replay.Unreal.Chunks;
 using Replay.Unreal.Readers;
 
-namespace Replay.Unreal.Tests.Readers;
+namespace Replay.Valorant.Tests;
 
 public class ValorantReplayReaderTests
 {

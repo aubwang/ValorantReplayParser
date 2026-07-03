@@ -7,8 +7,10 @@ using Replay.Models.Events;
 using Replay.Models.Replay;
 using Replay.Unreal.Chunks;
 using Replay.Unreal.Info;
+using Replay.Unreal.Readers;
+using Replay.Valorant.Descriptors;
 
-namespace Replay.Unreal.Readers;
+namespace Replay.Valorant;
 
 public sealed class ValorantReplayReader
 {
@@ -32,23 +34,24 @@ public sealed class ValorantReplayReader
         _parseProfile = parseProfile ?? ParseProfile.Default;
         _loggerFactory = loggerFactory;
     }
+    
+    public static ValorantReplayReader CreateMinimal(
+        ILoggerFactory? loggerFactory = null,
+        ParseProfile? parseProfile = null)
+    {
+        return CreateDefault(loggerFactory, null, parseProfile);
+    }
 
     public static ValorantReplayReader CreateDefault(
-        DescriptorCatalog? descriptorCatalog = null,
-        ParseProfile? parseProfile = null) =>
-        new(new OozSharpOodleDecompressor(), descriptorCatalog: descriptorCatalog, parseProfile: parseProfile);
-
-    public static ValorantReplayReader CreateDefault(
-        ILoggerFactory loggerFactory,
+        ILoggerFactory? loggerFactory,
         IReplayEventSink? eventSink = null,
-        DescriptorCatalog? descriptorCatalog = null,
         ParseProfile? parseProfile = null)
     {
         return new ValorantReplayReader(
             new OozSharpOodleDecompressor(),
             new PlaybackPacketReplayDataChunkHandler(),
             eventSink,
-            descriptorCatalog,
+            ValorantDescriptors.CreateCatalog(),
             parseProfile,
             loggerFactory);
     }

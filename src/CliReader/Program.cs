@@ -4,6 +4,7 @@ using Replay.Encoding.Archives;
 using Microsoft.Extensions.Logging;
 using Replay.Models.Errors;
 using Replay.Unreal.Readers;
+using Replay.Valorant;
 using Replay.Valorant.Descriptors;
 using Serilog;
 
@@ -34,8 +35,7 @@ try
     var actorEventLogger = new ActorEventLogger(loggerFactory.CreateLogger<ActorEventLogger>());
     var context = ValorantReplayReader.CreateDefault(
         loggerFactory,
-        actorEventLogger,
-        ValorantDescriptors.CreateCatalog()).Read(archive);
+        actorEventLogger).Read(archive);
 
     logger.LogInformation("Read replay {ReplayName}", context.ReplayInfo.FriendlyName);
     logger.LogInformation("Version {ReplayVersion}", context.ReplayVersion.Branch);

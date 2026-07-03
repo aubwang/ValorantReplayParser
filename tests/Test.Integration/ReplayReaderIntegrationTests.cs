@@ -6,6 +6,7 @@ using Replay.Models.Replay;
 using Replay.Unreal.Chunks;
 using Replay.Unreal.Header;
 using Replay.Unreal.Readers;
+using Replay.Valorant;
 using Replay.Valorant.Descriptors;
 using Snapshooter.NUnit;
 
@@ -179,7 +180,7 @@ public class ReplayReaderIntegrationTests
     private static ReplayReaderContext ReadReplay(byte[] replayBytes)
     {
         var archive = new FBinaryArchive(replayBytes);
-        return ValorantReplayReader.CreateDefault(ValorantDescriptors.CreateCatalog()).Read(archive);
+        return ValorantReplayReader.CreateMinimal().Read(archive);
     }
 
 

@@ -5,6 +5,7 @@ using NetGuidCacheReader.Logging;
 using Replay.Models.Descriptors;
 using Replay.Models.Errors;
 using Replay.Unreal.Readers;
+using Replay.Valorant;
 using Replay.Valorant.Descriptors;
 using Serilog;
 
@@ -36,7 +37,6 @@ try
     var context = ValorantReplayReader.CreateDefault(
         loggerFactory,
         null,
-        ValorantDescriptors.CreateCatalog(),
         ParseProfile.Default).Read(archive);
 
 

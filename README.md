@@ -42,7 +42,6 @@ using var archive = new FBinaryArchive(file);
 ValorantReplayReader reader = ValorantReplayReader.CreateDefault(
         loggerFactory,
         new TestReplayEventSink(),
-        ValorantDescriptors.CreateCatalog(),
         ParseProfile.Default); // Default behaviour: Parse everything
 
 reader.Read(archive);
