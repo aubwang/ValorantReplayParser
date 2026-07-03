@@ -1,0 +1,112 @@
+using Replay.Encoding.Archives;
+using Replay.Models.Descriptors;
+using Replay.Models.Events;
+using Replay.Unreal.Parsing;
+
+namespace Replay.Valorant.Descriptors;
+
+internal static class ValorantPayloadDecoders
+{
+    public const int MaxInputEventBytes = 64 * 1024;
+
+    public static readonly IRpcDecoder NoParametersRpc = new NoParametersRpcDecoder();
+
+    public static IRpcDecoder RawRpc(string typeName) => new RawRpcDecoder(typeName);
+
+    public static IFieldDecoder RawPayload(string typeName) => new RawPayloadDecoder(typeName);
+
+    public static IFieldDecoder PrimitiveOrRaw(IFieldDecoder primitiveDecoder, string typeName) =>
+        new PrimitiveOrRawDecoder(primitiveDecoder, typeName);
+
+    private sealed class RawPayloadDecoder : IFieldDecoder
+    {
+        private readonly string _typeName;
+
+        public RawPayloadDecoder(string typeName)
+        {
+            _typeName = typeName;
+        }
+
+        public DecodedFieldValue Decode(ref FieldDecodeContext context, FBitArchive archive)
+        {
+            var bitCount = archive.BitsRemaining;
+            archive.SkipRemaining();
+            return DecodedFieldValue.FromObject(new ValorantRawPayload(_typeName, checked((int)bitCount)));
+        }
+    }
+
+    private sealed class PrimitiveOrRawDecoder : IFieldDecoder
+    {
+        private readonly IFieldDecoder _primitiveDecoder;
+        private readonly RawPayloadDecoder _rawDecoder;
+
+        public PrimitiveOrRawDecoder(IFieldDecoder primitiveDecoder, string typeName)
+        {
+            _primitiveDecoder = primitiveDecoder;
+            _rawDecoder = new RawPayloadDecoder(typeName);
+        }
+
+        public DecodedFieldValue Decode(ref FieldDecodeContext context, FBitArchive archive)
+        {
+            using (var checkpoint = archive.CreateCheckpoint())
+            {
+                try
+                {
+                    var value = _primitiveDecoder.Decode(ref context, archive);
+                    if (archive.AtEnd)
+                    {
+                        checkpoint.Commit();
+                        return value;
+                    }
+                }
+                catch (ArchiveReadException)
+                {
+                }
+                catch (OverflowException)
+                {
+                }
+            }
+
+            return _rawDecoder.Decode(ref context, archive);
+        }
+    }
+
+    private sealed class NoParametersRpcDecoder : IRpcDecoder
+    {
+        public IReadOnlyList<DecodedReplayField> Decode(ref FieldDecodeContext context, FBitArchive archive)
+        {
+            archive.SkipRemaining();
+            return [];
+        }
+    }
+
+    private sealed class RawRpcDecoder : IRpcDecoder
+    {
+        private readonly string _typeName;
+
+        public RawRpcDecoder(string typeName)
+        {
+            _typeName = typeName;
+        }
+
+        public IReadOnlyList<DecodedReplayField> Decode(ref FieldDecodeContext context, FBitArchive archive)
+        {
+            var bitCount = checked((int)archive.BitsRemaining);
+            archive.SkipRemaining();
+            return
+            [
+                new DecodedReplayField(
+                    Handle: -1,
+                    Name: "Payload",
+                    ExportName: null,
+                    context.Categories,
+                    DecodedFieldValue.FromObject(new ValorantRawPayload(_typeName, bitCount))),
+            ];
+        }
+    }
+}
+
+internal sealed record ValorantRawPayload(string TypeName, int BitCount)
+{
+    public override string ToString() => $"{TypeName}({BitCount} bits)";
+}
