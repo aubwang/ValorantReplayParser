@@ -4,9 +4,7 @@ using Microsoft.Extensions.Logging;
 using NetGuidCacheReader.Logging;
 using Replay.Models.Descriptors;
 using Replay.Models.Errors;
-using Replay.Unreal.Readers;
 using Replay.Valorant;
-using Replay.Valorant.Descriptors;
 using Serilog;
 
 Log.Logger = new LoggerConfiguration()

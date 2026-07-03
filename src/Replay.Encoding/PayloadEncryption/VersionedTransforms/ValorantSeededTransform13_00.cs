@@ -120,7 +120,7 @@ public sealed class ValorantSeededTransform13_00 : IPayloadTransform
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static ulong SubstituteBytes(ulong value, byte[] table)
     {
-        return (ulong)table[(byte)value] |
+        return table[(byte)value] |
                ((ulong)table[(byte)(value >> 8)] << 8) |
                ((ulong)table[(byte)(value >> 16)] << 16) |
                ((ulong)table[(byte)(value >> 24)] << 24) |
@@ -133,7 +133,7 @@ public sealed class ValorantSeededTransform13_00 : IPayloadTransform
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static uint SubstituteBytes(uint value, byte[] table)
     {
-        return (uint)table[(byte)value] |
+        return table[(byte)value] |
                ((uint)table[(byte)(value >> 8)] << 8) |
                ((uint)table[(byte)(value >> 16)] << 16) |
                ((uint)table[(byte)(value >> 24)] << 24);

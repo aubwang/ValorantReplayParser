@@ -1,7 +1,6 @@
 using System.Buffers.Binary;
 using JetBrains.Annotations;
 using Replay.Encoding.Archives;
-using Replay.Encoding.Net;
 using Replay.Models.Descriptors;
 using Replay.Models.Errors;
 using Replay.Models.Events;

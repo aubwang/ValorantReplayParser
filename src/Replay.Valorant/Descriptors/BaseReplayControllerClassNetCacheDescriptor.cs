@@ -1,5 +1,4 @@
 using Replay.Models.Descriptors;
-using Replay.Unreal.Parsing;
 using Replay.Valorant.Movement;
 
 namespace Replay.Valorant.Descriptors;
