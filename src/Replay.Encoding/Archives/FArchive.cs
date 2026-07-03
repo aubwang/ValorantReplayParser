@@ -36,7 +36,7 @@ public abstract class FArchive : IDisposable
             SeekOrigin.Begin => offset,
             SeekOrigin.Current => Position + offset,
             SeekOrigin.End => Length + offset,
-            _ => offset
+            _ => offset,
         };
 
         Seek(position);
@@ -83,7 +83,7 @@ public abstract class FArchive : IDisposable
         return false;
     }
 
-    public virtual uint ReadIntPacked()
+    public uint ReadIntPacked()
     {
         uint value = 0;
         var shift = 0;

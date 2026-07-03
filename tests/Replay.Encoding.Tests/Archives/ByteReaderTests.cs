@@ -10,7 +10,7 @@ public class ByteReaderTests
         var reader = new ByteArchiveReader([
             0x34, 0x12,
             0x78, 0x56, 0x34, 0x12,
-            0x00, 0x00, 0x80, 0x3F
+            0x00, 0x00, 0x80, 0x3F,
         ]);
 
         Assert.That(reader.ReadUInt16(), Is.EqualTo(0x1234));

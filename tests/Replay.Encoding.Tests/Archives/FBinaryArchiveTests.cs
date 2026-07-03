@@ -12,7 +12,7 @@ public class FBinaryArchiveTests
         var bytes = new byte[]
         {
             0x06, 0x00, 0x00, 0x00,
-            (byte)'L', (byte)'e', (byte)'v', (byte)'e', (byte)'l', 0x00
+            (byte)'L', (byte)'e', (byte)'v', (byte)'e', (byte)'l', 0x00,
         };
         var archive = new FBinaryArchive(bytes);
 

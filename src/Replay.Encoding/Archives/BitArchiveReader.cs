@@ -22,14 +22,14 @@ public sealed class BitArchiveReader : FBitArchive
 
     private long _bitPosition;
 
-    // Absolute index into _source, not relative to _sourceOffset.
+    // Absolute index into _source
     private int _byteIndex;
 
     // LSB-first bit buffer.
     private ulong _bitBuffer;
     private int _bitsInBuffer;
 
-    public BitArchiveReader(ReadOnlyMemory<byte> input)
+    private BitArchiveReader(ReadOnlyMemory<byte> input)
         : this(input, 0, input.Length * 8L)
     {
     }
@@ -82,7 +82,7 @@ public sealed class BitArchiveReader : FBitArchive
         _startBit = startBit;
         _bitLength = bitLength;
 
-        if (MemoryMarshal.TryGetArray(input, out ArraySegment<byte> segment) && segment.Array is not null)
+        if (MemoryMarshal.TryGetArray(input, out var segment) && segment.Array is not null)
         {
             _source = segment.Array;
             _sourceOffset = segment.Offset;
@@ -680,7 +680,7 @@ public sealed class BitArchiveReader : FBitArchive
                | ((ulong)Unsafe.Add(ref source, 5) << 40)
                | ((ulong)Unsafe.Add(ref source, 6) << 48),
 
-            _ => 0
+            _ => 0,
         };
     }
 
