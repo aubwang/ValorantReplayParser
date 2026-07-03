@@ -1,3 +1,4 @@
+using NSubstitute;
 using Replay.Encoding.Archives;
 
 namespace Replay.Encoding.Tests.Archives;
@@ -201,6 +202,20 @@ public class BitReaderTests
         }
 
         Assert.That(reader.BitPosition, Is.EqualTo(4));
+    }
+    
+    
+    [Test]
+    public void Checkpoint_DisposedDoesNotRecoverCheckpoint()
+    {
+        var reader = Substitute.For<FBitArchive>();
+        
+        var checkpoint = reader.CreateCheckpoint();
+        
+        checkpoint.Dispose();
+        checkpoint.Dispose();
+
+        reader.Received(1).RestorePosition(Arg.Any<long>());
     }
 
     [Test]
