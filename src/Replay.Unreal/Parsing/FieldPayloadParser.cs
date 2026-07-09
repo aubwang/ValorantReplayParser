@@ -8,13 +8,13 @@ namespace Replay.Unreal.Parsing;
 
 public class FieldPayloadParser
 {
-    public IReadOnlyList<DecodedReplayField> ParseContentPayload(
+    public DecodedPayloadResult ParseContentPayload(
         FBitArchive payload,
         BoundExportGroup boundGroup,
         ref FieldDecodeContext context) =>
         ParseRepLayoutProperties(payload, boundGroup, ref context);
 
-    public IReadOnlyList<DecodedReplayField> ParseRepLayoutProperties(
+    public DecodedPayloadResult ParseRepLayoutProperties(
         FBitArchive payload,
         BoundExportGroup boundGroup,
         ref FieldDecodeContext context,
@@ -26,7 +26,7 @@ public class FieldPayloadParser
                 "Export group '{ExportGroupPath}' cannot be parsed with class-net-cache grammar as content payload.",
                 context.ExportGroupPath ?? boundGroup.SourceDescriptor.Path);
             payload.SkipRemaining();
-            return [];
+            return DecodedPayloadResult.Empty;
         }
 
         if (readPropertyChecksum)
@@ -34,16 +34,19 @@ public class FieldPayloadParser
             _ = payload.ReadBit();
         }
 
-        var fields = new List<DecodedReplayField>();
+        context.CaptureDiagnosticFields = boundGroup.CaptureDiagnosticFields;
+        var payloadObject = boundGroup.CreatePayloadInstance();
+        var decodedFieldCount = 0;
+        List<DecodedReplayField>? diagnosticFields = context.CaptureDiagnosticFields ? [] : null;
         while (!payload.AtEnd)
         {
-            if (ParseProperty(payload, boundGroup, ref context, fields))
+            if (ParseProperty(payload, boundGroup, payloadObject, ref context, ref decodedFieldCount, diagnosticFields))
             {
-                return fields;
+                return new DecodedPayloadResult(payloadObject, decodedFieldCount, diagnosticFields ?? []);
             }
         }
 
-        return fields;
+        return new DecodedPayloadResult(payloadObject, decodedFieldCount, diagnosticFields ?? []);
     }
 
     public IReadOnlyList<DecodedRpcInvocation> ParseClassNetCachePayload(
@@ -98,14 +101,15 @@ public class FieldPayloadParser
 
             context.FieldName = rpcFunction.Name;
             context.Categories = rpcFunction.Categories;
+            context.CaptureDiagnosticFields = rpcFunction.CaptureDiagnosticFields;
 
             var beforeRpc = rpcPayload.BitsRemaining;
-            IReadOnlyList<DecodedReplayField> fields;
+            DecodedPayloadResult result;
             var wasDecoded = true;
 
             if (rpcFunction.Decoder is not null)
             {
-                fields = rpcFunction.Decoder.Decode(ref context, rpcPayload);
+                result = rpcFunction.Decoder.Decode(ref context, rpcPayload);
                 if (!rpcPayload.AtEnd)
                 {
                     rpcPayload.EnsureFullyConsumed($"RPC '{rpcFunction.Name}' (handle {handle})");
@@ -113,7 +117,7 @@ public class FieldPayloadParser
             }
             else if (rpcFunction.FunctionGroup is { Enabled: true })
             {
-                fields = ParseRepLayoutProperties(
+                result = ParseRepLayoutProperties(
                     rpcPayload,
                     rpcFunction.FunctionGroup,
                     ref context,
@@ -122,7 +126,7 @@ public class FieldPayloadParser
             else
             {
                 rpcPayload.SkipRemaining();
-                fields = [];
+                result = DecodedPayloadResult.Empty;
                 wasDecoded = false;
             }
 
@@ -134,7 +138,9 @@ public class FieldPayloadParser
                 (int)payloadBits,
                 checked((int)(beforeRpc - rpcPayload.BitsRemaining)),
                 wasDecoded,
-                fields));
+                result.Payload,
+                result.DecodedFieldCount,
+                result.DiagnosticFields));
         }
 
         return invocations;
@@ -143,8 +149,10 @@ public class FieldPayloadParser
     private bool ParseProperty(
         FBitArchive payload,
         BoundExportGroup boundGroup,
+        object payloadObject,
         ref FieldDecodeContext context,
-        List<DecodedReplayField> fields)
+        ref int decodedFieldCount,
+        List<DecodedReplayField>? diagnosticFields)
     {
         var encodedHandle = payload.ReadIntPacked();
         if (encodedHandle == 0)
@@ -184,7 +192,9 @@ public class FieldPayloadParser
 
         if (decodedValue.HasValue)
         {
-            fields.Add(new DecodedReplayField(
+            decodedFieldCount++;
+            DecodedValueAssigner.Assign(payloadObject, fieldBinding, decodedValue);
+            diagnosticFields?.Add(new DecodedReplayField(
                 handle,
                 fieldBinding.Name,
                 fieldBinding.ExportName,
@@ -217,4 +227,6 @@ public sealed record DecodedRpcInvocation(
     int PayloadBits,
     int ParsedBits,
     bool WasDecoded,
-    IReadOnlyList<DecodedReplayField> Fields);
+    object? Payload,
+    int DecodedFieldCount,
+    IReadOnlyList<DecodedReplayField> DiagnosticFields);

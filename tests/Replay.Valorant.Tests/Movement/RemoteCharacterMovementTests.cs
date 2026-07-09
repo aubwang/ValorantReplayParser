@@ -128,15 +128,14 @@ public class RemoteCharacterMovementTests
             ObjectNetGuid = new NetworkGuid(101),
         };
 
-        var fields = decoder.Decode(ref context, archive);
+        var result = decoder.Decode(ref context, archive);
         var movementEvents = eventSink.Events.OfType<RemoteCharacterMovementReceived>().ToArray();
-        var batch = (RemoteCharacterUpdateBatch)fields[0].Value.ObjectValue!;
+        var batch = (RemoteCharacterUpdateBatch)result.Payload!;
 
         Assert.Multiple(() =>
         {
-            Assert.That(fields, Has.Count.EqualTo(1));
-            Assert.That(fields[0].Name, Is.EqualTo("RemoteCharacterUpdates"));
-            Assert.That(fields[0].Value.Kind, Is.EqualTo(DecodedFieldValueKind.Object));
+            Assert.That(result.DecodedFieldCount, Is.EqualTo(1));
+            Assert.That(result.DiagnosticFields, Is.Empty);
             Assert.That(batch.Updates, Has.Count.EqualTo(1));
             Assert.That(batch.Updates[0].ShooterCharacterNetGuidValue, Is.EqualTo(1234));
             Assert.That(batch.Updates[0].ComponentDataStream!.MoveCount, Is.EqualTo(1));

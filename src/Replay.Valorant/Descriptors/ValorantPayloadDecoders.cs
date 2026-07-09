@@ -73,10 +73,10 @@ internal static class ValorantPayloadDecoders
 
     private sealed class NoParametersRpcDecoder : IRpcDecoder
     {
-        public IReadOnlyList<DecodedReplayField> Decode(ref FieldDecodeContext context, FBitArchive archive)
+        public DecodedPayloadResult Decode(ref FieldDecodeContext context, FBitArchive archive)
         {
             archive.SkipRemaining();
-            return [];
+            return DecodedPayloadResult.Empty;
         }
     }
 
@@ -89,24 +89,29 @@ internal static class ValorantPayloadDecoders
             _typeName = typeName;
         }
 
-        public IReadOnlyList<DecodedReplayField> Decode(ref FieldDecodeContext context, FBitArchive archive)
+        public DecodedPayloadResult Decode(ref FieldDecodeContext context, FBitArchive archive)
         {
             var bitCount = checked((int)archive.BitsRemaining);
             archive.SkipRemaining();
-            return
-            [
-                new DecodedReplayField(
+            var payload = new ValorantRawPayload(_typeName, bitCount);
+            var diagnostics = context.CaptureDiagnosticFields
+                ? new[]
+                {
+                    new DecodedReplayField(
                     Handle: -1,
                     Name: "Payload",
                     ExportName: null,
                     context.Categories,
-                    DecodedFieldValue.FromObject(new ValorantRawPayload(_typeName, bitCount))),
-            ];
+                    DecodedFieldValue.FromObject(payload)),
+                }
+                : [];
+
+            return new DecodedPayloadResult(payload, DecodedFieldCount: 1, diagnostics);
         }
     }
 }
 
-internal sealed record ValorantRawPayload(string TypeName, int BitCount)
+public sealed record ValorantRawPayload(string TypeName, int BitCount)
 {
     public override string ToString() => $"{TypeName}({BitCount} bits)";
 }

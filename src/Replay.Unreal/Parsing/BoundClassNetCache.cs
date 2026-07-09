@@ -17,6 +17,7 @@ public sealed class BoundRpcFunction
     public required string FunctionExportPath { get; init; }
     public ExportCategory Categories { get; init; }
     public bool Enabled { get; init; }
+    public bool CaptureDiagnosticFields { get; init; }
     public BoundExportGroup? FunctionGroup { get; set; }
     public IRpcDecoder? Decoder { get; init; }
 }

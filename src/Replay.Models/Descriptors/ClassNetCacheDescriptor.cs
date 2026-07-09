@@ -47,4 +47,15 @@ public abstract class ClassNetCacheDescriptor<TDescriptor> : ClassNetCacheDescri
         _functionFields.Add(builder, GetType().Name, "Class-net-cache functions");
         return builder;
     }
+
+    protected RpcDescriptorBuilder AddFunction<TParameters>(
+        string name,
+        string functionExportPath,
+        ExportCategory categories = ExportCategory.None)
+        where TParameters : ExportGroupDescriptor, new()
+    {
+        var builder = new RpcDescriptorBuilder(name, functionExportPath, categories, new TParameters());
+        _functionFields.Add(builder, GetType().Name, "Class-net-cache functions");
+        return builder;
+    }
 }

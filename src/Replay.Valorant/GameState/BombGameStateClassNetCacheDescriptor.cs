@@ -23,80 +23,194 @@ internal sealed class BombGameStateClassNetCacheDescriptor : ClassNetCacheDescri
         AddFunction("ClientResetRound", "/Script/ShooterGame.ShooterGameState:ClientResetRound", ExportCategory.GameState)
             .Decode(ValorantPayloadDecoders.NoParametersRpc);
 
-        var endRound = AddFunction(
-            "MulticastEndRound",
-            "/Script/ShooterGame.ShooterGameState:MulticastEndRound",
-            ExportCategory.GameState);
-        endRound.AddField("NewRoundNumber", "NewRoundNumber", ExportCategory.GameState).Int32OrRaw();
-        endRound.Decode(ValorantPayloadDecoders.RawRpc("MulticastEndRound"));
+        AddFunction<MulticastEndRoundParameters>(
+                "MulticastEndRound",
+                "/Script/ShooterGame.ShooterGameState:MulticastEndRound",
+                ExportCategory.GameState)
+            .Decode(ValorantPayloadDecoders.RawRpc("MulticastEndRound"));
 
-        var enterPlayspace = AddFunction(
-            "MulticastEnterPlayspace",
-            "/Script/ShooterGame.ShooterGameState:MulticastEnterPlayspace",
-            ExportCategory.GameState);
-        enterPlayspace.AddField("PlayspaceComponent", "PlayspaceComponent", ExportCategory.GameState).ObjectNetGuidOrRaw();
-        enterPlayspace.AddField("NewPlayspace", "NewPlayspace", ExportCategory.GameState).ObjectNetGuidOrRaw();
-        enterPlayspace.AddField("bLeaveCurrentPlayspaces", "LeaveCurrentPlayspaces", ExportCategory.GameState).BoolOrRaw();
-        enterPlayspace.AddField("bExecuteOnOwner", "ExecuteOnOwner", ExportCategory.GameState).BoolOrRaw();
-        enterPlayspace.Decode(ValorantPayloadDecoders.RawRpc("MulticastEnterPlayspace"));
+        AddFunction<MulticastEnterPlayspaceParameters>(
+                "MulticastEnterPlayspace",
+                "/Script/ShooterGame.ShooterGameState:MulticastEnterPlayspace",
+                ExportCategory.GameState)
+            .Decode(ValorantPayloadDecoders.RawRpc("MulticastEnterPlayspace"));
 
-        var resurrect = AddFunction(
+        AddFunction<MulticastReceivePlayerResurrectEventParameters>(
             "MulticastReceivePlayerResurrectEvent",
             "/Script/ShooterGame.ShooterGameState:MulticastReceivePlayerResurrectEvent",
             ExportCategory.GameState | ExportCategory.Gunplay);
-        resurrect.AddField("ResurrectorPlayer", "ResurrectorPlayer", ExportCategory.GameState).ObjectNetGuidOrRaw();
-        resurrect.AddField("ResurrectedPlayer", "ResurrectedPlayer", ExportCategory.GameState).ObjectNetGuidOrRaw();
-        resurrect.AddField("KillNumberInRoundForResurrector", "KillNumberInRoundForResurrector",
-            ExportCategory.Gunplay).Int32OrRaw();
-        resurrect.AddField("KillNumberInRoundForResurrected", "KillNumberInRoundForResurrected",
-            ExportCategory.Gunplay).Int32OrRaw();
 
         AddTemporaryDeathBase();
         AddTemporaryDeathPoint();
 
-        var setPhase = AddFunction(
-            "MulticastSetPhase",
-            "/Script/ShooterGame.ShooterGameState:MulticastSetPhase",
-            ExportCategory.GameState);
-        setPhase.AddField("NewPhase", "NewPhase", ExportCategory.GameState).EnumByte();
-        setPhase.Decode(ValorantPayloadDecoders.RawRpc("MulticastSetPhase"));
+        AddFunction<MulticastSetPhaseParameters>(
+                "MulticastSetPhase",
+                "/Script/ShooterGame.ShooterGameState:MulticastSetPhase",
+                ExportCategory.GameState)
+            .Decode(ValorantPayloadDecoders.RawRpc("MulticastSetPhase"));
 
-        var resetForRespawn = AddFunction(
+        AddFunction<MulticastResetForRespawnParameters>(
             "MulticastResetForRespawn",
             "/Script/ShooterGame.AresGameStateBase:MulticastResetForRespawn",
             ExportCategory.GameState);
-        resetForRespawn.AddField("ShooterCharacter", "ShooterCharacter", ExportCategory.GameState).ObjectNetGuidOrRaw();
-        resetForRespawn.AddField("SpawnTransform", "SpawnTransform", ExportCategory.GameState)
-            .Decode(ValorantPayloadDecoders.RawPayload("FTransform"));
     }
 
     private void AddTemporaryDeathBase()
     {
-        var rpc = AddFunction(
+        AddFunction<MulticastReceivePlayerTemporaryDeathEventBaseParameters>(
             "MulticastReceivePlayerTemporaryDeathEvent_Base",
             "/Script/ShooterGame.ShooterGameState:MulticastReceivePlayerTemporaryDeathEvent_Base",
             ExportCategory.GameState | ExportCategory.Gunplay);
-        rpc.AddField("DamagerPlayer", "DamagerPlayer", ExportCategory.Gunplay).ObjectNetGuidOrRaw();
-        rpc.AddField("DownedPlayer", "DownedPlayer", ExportCategory.Gunplay).ObjectNetGuidOrRaw();
-        rpc.AddField("DamageResponseData", "DamageResponseData", ExportCategory.Gunplay)
-            .Decode(ValorantPayloadDecoders.RawPayload("FNetworkedDamageResponseData"));
-        rpc.AddField("EquippableUsed", "EquippableUsed", ExportCategory.Inventory | ExportCategory.Gunplay)
-            .ObjectNetGuidOrRaw();
-        rpc.AddField("bRecoversInstantly", "RecoversInstantly", ExportCategory.GameState).BoolOrRaw();
     }
 
     private void AddTemporaryDeathPoint()
     {
-        var rpc = AddFunction(
+        AddFunction<MulticastReceivePlayerTemporaryDeathEventPointParameters>(
             "MulticastReceivePlayerTemporaryDeathEvent_Point",
             "/Script/ShooterGame.ShooterGameState:MulticastReceivePlayerTemporaryDeathEvent_Point",
             ExportCategory.GameState | ExportCategory.Gunplay);
-        rpc.AddField("DamagerPlayer", "DamagerPlayer", ExportCategory.Gunplay).ObjectNetGuidOrRaw();
-        rpc.AddField("DownedPlayer", "DownedPlayer", ExportCategory.Gunplay).ObjectNetGuidOrRaw();
-        rpc.AddField("PointDamageResponseData", "PointDamageResponseData", ExportCategory.Gunplay)
-            .Decode(ValorantPayloadDecoders.RawPayload("FNetworkedPointDamageResponseData"));
-        rpc.AddField("EquippableUsed", "EquippableUsed", ExportCategory.Inventory | ExportCategory.Gunplay)
+    }
+}
+
+public sealed class MulticastEndRoundParameters : ExportGroupDescriptor<MulticastEndRoundParameters>
+{
+    public override string Path => "/Script/ShooterGame.ShooterGameState:MulticastEndRound";
+    public override ExportCategory Categories => ExportCategory.GameState;
+    public override ExportGroupKind Kind => ExportGroupKind.ClassNetCache;
+    public override FieldStreamGrammar Grammar => FieldStreamGrammar.FunctionParameters;
+
+    public int NewRoundNumber { get; set; }
+
+    protected override void Configure()
+    {
+        AddProperty(x => x.NewRoundNumber, ExportCategory.GameState).Int32OrRaw();
+    }
+}
+
+public sealed class MulticastEnterPlayspaceParameters : ExportGroupDescriptor<MulticastEnterPlayspaceParameters>
+{
+    public override string Path => "/Script/ShooterGame.ShooterGameState:MulticastEnterPlayspace";
+    public override ExportCategory Categories => ExportCategory.GameState;
+    public override ExportGroupKind Kind => ExportGroupKind.ClassNetCache;
+    public override FieldStreamGrammar Grammar => FieldStreamGrammar.FunctionParameters;
+
+    public uint PlayspaceComponent { get; set; }
+    public uint NewPlayspace { get; set; }
+    public bool LeaveCurrentPlayspaces { get; set; }
+    public bool ExecuteOnOwner { get; set; }
+
+    protected override void Configure()
+    {
+        AddProperty(x => x.PlayspaceComponent, ExportCategory.GameState).ObjectNetGuidOrRaw();
+        AddProperty(x => x.NewPlayspace, ExportCategory.GameState).ObjectNetGuidOrRaw();
+        AddProperty("bLeaveCurrentPlayspaces", x => x.LeaveCurrentPlayspaces, ExportCategory.GameState).BoolOrRaw();
+        AddProperty("bExecuteOnOwner", x => x.ExecuteOnOwner, ExportCategory.GameState).BoolOrRaw();
+    }
+}
+
+public sealed class MulticastReceivePlayerResurrectEventParameters
+    : ExportGroupDescriptor<MulticastReceivePlayerResurrectEventParameters>
+{
+    public override string Path => "/Script/ShooterGame.ShooterGameState:MulticastReceivePlayerResurrectEvent";
+    public override ExportCategory Categories => ExportCategory.GameState | ExportCategory.Gunplay;
+    public override ExportGroupKind Kind => ExportGroupKind.ClassNetCache;
+    public override FieldStreamGrammar Grammar => FieldStreamGrammar.FunctionParameters;
+
+    public uint ResurrectorPlayer { get; set; }
+    public uint ResurrectedPlayer { get; set; }
+    public int KillNumberInRoundForResurrector { get; set; }
+    public int KillNumberInRoundForResurrected { get; set; }
+
+    protected override void Configure()
+    {
+        AddProperty(x => x.ResurrectorPlayer, ExportCategory.GameState).ObjectNetGuidOrRaw();
+        AddProperty(x => x.ResurrectedPlayer, ExportCategory.GameState).ObjectNetGuidOrRaw();
+        AddProperty(x => x.KillNumberInRoundForResurrector, ExportCategory.Gunplay).Int32OrRaw();
+        AddProperty(x => x.KillNumberInRoundForResurrected, ExportCategory.Gunplay).Int32OrRaw();
+    }
+}
+
+public sealed class MulticastSetPhaseParameters : ExportGroupDescriptor<MulticastSetPhaseParameters>
+{
+    public override string Path => "/Script/ShooterGame.ShooterGameState:MulticastSetPhase";
+    public override ExportCategory Categories => ExportCategory.GameState;
+    public override ExportGroupKind Kind => ExportGroupKind.ClassNetCache;
+    public override FieldStreamGrammar Grammar => FieldStreamGrammar.FunctionParameters;
+
+    public byte NewPhase { get; set; }
+
+    protected override void Configure()
+    {
+        AddProperty(x => x.NewPhase, ExportCategory.GameState).EnumByte();
+    }
+}
+
+public sealed class MulticastResetForRespawnParameters : ExportGroupDescriptor<MulticastResetForRespawnParameters>
+{
+    public override string Path => "/Script/ShooterGame.AresGameStateBase:MulticastResetForRespawn";
+    public override ExportCategory Categories => ExportCategory.GameState;
+    public override ExportGroupKind Kind => ExportGroupKind.ClassNetCache;
+    public override FieldStreamGrammar Grammar => FieldStreamGrammar.FunctionParameters;
+
+    public uint ShooterCharacter { get; set; }
+    public ValorantRawPayload? SpawnTransform { get; set; }
+
+    protected override void Configure()
+    {
+        AddProperty(x => x.ShooterCharacter, ExportCategory.GameState).ObjectNetGuidOrRaw();
+        AddProperty(x => x.SpawnTransform, ExportCategory.GameState)
+            .Decode(ValorantPayloadDecoders.RawPayload("FTransform"));
+    }
+}
+
+public sealed class MulticastReceivePlayerTemporaryDeathEventBaseParameters
+    : ExportGroupDescriptor<MulticastReceivePlayerTemporaryDeathEventBaseParameters>
+{
+    public override string Path => "/Script/ShooterGame.ShooterGameState:MulticastReceivePlayerTemporaryDeathEvent_Base";
+    public override ExportCategory Categories => ExportCategory.GameState | ExportCategory.Gunplay;
+    public override ExportGroupKind Kind => ExportGroupKind.ClassNetCache;
+    public override FieldStreamGrammar Grammar => FieldStreamGrammar.FunctionParameters;
+
+    public uint DamagerPlayer { get; set; }
+    public uint DownedPlayer { get; set; }
+    public ValorantRawPayload? DamageResponseData { get; set; }
+    public uint EquippableUsed { get; set; }
+    public bool RecoversInstantly { get; set; }
+
+    protected override void Configure()
+    {
+        AddProperty(x => x.DamagerPlayer, ExportCategory.Gunplay).ObjectNetGuidOrRaw();
+        AddProperty(x => x.DownedPlayer, ExportCategory.Gunplay).ObjectNetGuidOrRaw();
+        AddProperty(x => x.DamageResponseData, ExportCategory.Gunplay)
+            .Decode(ValorantPayloadDecoders.RawPayload("FNetworkedDamageResponseData"));
+        AddProperty(x => x.EquippableUsed, ExportCategory.Inventory | ExportCategory.Gunplay)
             .ObjectNetGuidOrRaw();
-        rpc.AddField("bRecoversInstantly", "RecoversInstantly", ExportCategory.GameState).BoolOrRaw();
+        AddProperty("bRecoversInstantly", x => x.RecoversInstantly, ExportCategory.GameState).BoolOrRaw();
+    }
+}
+
+public sealed class MulticastReceivePlayerTemporaryDeathEventPointParameters
+    : ExportGroupDescriptor<MulticastReceivePlayerTemporaryDeathEventPointParameters>
+{
+    public override string Path => "/Script/ShooterGame.ShooterGameState:MulticastReceivePlayerTemporaryDeathEvent_Point";
+    public override ExportCategory Categories => ExportCategory.GameState | ExportCategory.Gunplay;
+    public override ExportGroupKind Kind => ExportGroupKind.ClassNetCache;
+    public override FieldStreamGrammar Grammar => FieldStreamGrammar.FunctionParameters;
+
+    public uint DamagerPlayer { get; set; }
+    public uint DownedPlayer { get; set; }
+    public ValorantRawPayload? PointDamageResponseData { get; set; }
+    public uint EquippableUsed { get; set; }
+    public bool RecoversInstantly { get; set; }
+
+    protected override void Configure()
+    {
+        AddProperty(x => x.DamagerPlayer, ExportCategory.Gunplay).ObjectNetGuidOrRaw();
+        AddProperty(x => x.DownedPlayer, ExportCategory.Gunplay).ObjectNetGuidOrRaw();
+        AddProperty(x => x.PointDamageResponseData, ExportCategory.Gunplay)
+            .Decode(ValorantPayloadDecoders.RawPayload("FNetworkedPointDamageResponseData"));
+        AddProperty(x => x.EquippableUsed, ExportCategory.Inventory | ExportCategory.Gunplay)
+            .ObjectNetGuidOrRaw();
+        AddProperty("bRecoversInstantly", x => x.RecoversInstantly, ExportCategory.GameState).BoolOrRaw();
     }
 }

@@ -9,8 +9,8 @@ namespace CliReader;
 
 internal sealed class ActorEventLogger : IReplayEventSink
 {
-    private const int MaxDetailedActorEvents = 400;
-    private const int MaxDecodedValueEvents = 400;
+    private const int MaxDetailedActorEvents = 4000;
+    private const int MaxDecodedValueEvents = 4000;
 
     private readonly ILogger<ActorEventLogger> _logger;
     private readonly Dictionary<uint, ActorIdentity> _actors = [];
@@ -58,13 +58,13 @@ internal sealed class ActorEventLogger : IReplayEventSink
                     SkippedExportGroupCount++;
                 }
 
-                DecodedFieldCount += exportGroup.Fields.Count;
+                DecodedFieldCount += exportGroup.DecodedFieldCount;
                 LogExportGroup(exportGroup);
                 break;
 
             case RpcReceived rpc:
                 RpcCount++;
-                DecodedFieldCount += rpc.Fields.Count;
+                DecodedFieldCount += rpc.DecodedFieldCount;
                 LogRpc(rpc);
                 break;
         }
@@ -181,18 +181,18 @@ internal sealed class ActorEventLogger : IReplayEventSink
 
     private void LogExportGroup(ExportGroupReceived exportGroup)
     {
-        if (exportGroup.Fields.Count == 0 || !TryReserveDecodedValueEvent())
+        if (exportGroup.Payload is null && exportGroup.DiagnosticFields.Count == 0 || !TryReserveDecodedValueEvent())
         {
             return;
         }
 
         _logger.LogInformation(
-            "[{TimeSeconds,8:F3}s] Export {ExportGroupPath} actor {ActorNetGuid} object {ObjectNetGuid}: {Fields}",
+            "[{TimeSeconds,8:F3}s] Export {ExportGroupPath} actor {ActorNetGuid} object {ObjectNetGuid}: {Payload}",
             exportGroup.TimeSeconds,
             exportGroup.ExportGroupPath ?? "<unresolved>",
             exportGroup.ActorNetGuid,
             exportGroup.ObjectNetGuid,
-            FormatFields(exportGroup.Fields));
+            FormatPayload(exportGroup.Payload, exportGroup.DiagnosticFields));
     }
 
     private void LogRpc(RpcReceived rpc)
@@ -203,12 +203,12 @@ internal sealed class ActorEventLogger : IReplayEventSink
         }
 
         _logger.LogInformation(
-            "[{TimeSeconds,8:F3}s] RPC {FunctionName} actor {ActorNetGuid} object {ObjectNetGuid}: {Fields}",
+            "[{TimeSeconds,8:F3}s] RPC {FunctionName} actor {ActorNetGuid} object {ObjectNetGuid}: {Payload}",
             rpc.TimeSeconds,
             rpc.FunctionName,
             rpc.ActorNetGuid,
             rpc.ObjectNetGuid,
-            rpc.Fields.Count == 0 ? "<no decoded fields>" : FormatFields(rpc.Fields));
+            FormatPayload(rpc.Payload, rpc.DiagnosticFields));
     }
 
     private bool TryReserveDetailedActorEvent()
@@ -262,10 +262,57 @@ internal sealed class ActorEventLogger : IReplayEventSink
         DecodedFieldValueKind.Int32 => value.Int32Value.ToString("G", CultureInfo.InvariantCulture),
         DecodedFieldValueKind.UInt32 => value.UInt32Value.ToString("G", CultureInfo.InvariantCulture),
         DecodedFieldValueKind.Float => value.FloatValue.ToString("G", CultureInfo.InvariantCulture),
+        DecodedFieldValueKind.Double => value.DoubleValue.ToString("G", CultureInfo.InvariantCulture),
+        DecodedFieldValueKind.String => value.StringValue ?? string.Empty,
         DecodedFieldValueKind.NetGuid => FormattableString.Invariant($"net:{value.NetGuidValue}"),
         DecodedFieldValueKind.Vector => FormatVector(value.VectorValue),
         DecodedFieldValueKind.Rotator => FormatRotator(value.RotatorValue),
+        DecodedFieldValueKind.Object => value.ObjectValue?.ToString() ?? "<null>",
         _ => "<none>",
+    };
+
+    private static string FormatPayload(object? payload, IReadOnlyList<DecodedReplayField> diagnosticFields)
+    {
+        if (payload is null)
+        {
+            return diagnosticFields.Count == 0 ? "<no decoded payload>" : FormatFields(diagnosticFields);
+        }
+
+        if (payload is IDecodedPayload decodedPayload)
+        {
+            var type = payload.GetType();
+            var values = decodedPayload.DecodedProperties
+                .OrderBy(name => name, StringComparer.Ordinal)
+                .Take(8)
+                .Select(name => $"{name}={FormatRuntimeValue(type.GetProperty(name)?.GetValue(payload))}")
+                .ToArray();
+
+            var formattedValues = values.Length == 0
+                ? "<no decoded properties>"
+                : string.Join(", ", values);
+            var suffix = decodedPayload.DecodedProperties.Count > values.Length
+                ? FormattableString.Invariant($", ... +{decodedPayload.DecodedProperties.Count - values.Length}")
+                : string.Empty;
+            return $"{type.Name}({formattedValues}{suffix})";
+        }
+
+        return payload.ToString() ?? payload.GetType().Name;
+    }
+
+    private static string FormatRuntimeValue(object? value) => value switch
+    {
+        null => "<null>",
+        bool boolValue => boolValue ? "true" : "false",
+        byte byteValue => byteValue.ToString("G", CultureInfo.InvariantCulture),
+        int intValue => intValue.ToString("G", CultureInfo.InvariantCulture),
+        uint uintValue => FormattableString.Invariant($"net:{uintValue}"),
+        float floatValue => floatValue.ToString("G", CultureInfo.InvariantCulture),
+        double doubleValue => doubleValue.ToString("G", CultureInfo.InvariantCulture),
+        string stringValue => stringValue,
+        FVector vector => FormatVector(vector),
+        FRotator rotator => FormatRotator(rotator),
+        byte[] bytes => FormattableString.Invariant($"byte[{bytes.Length}]"),
+        _ => value.ToString() ?? value.GetType().Name,
     };
 
     private static string FormatVector(FVector? vector) =>

@@ -183,7 +183,9 @@ internal sealed class ContentBlockFramer
             payloadBits: 0,
             parsedBits: 0,
             wasDecoded: false,
-            fields: []);
+            payload: null,
+            decodedFieldCount: 0,
+            diagnosticFields: []);
         stats.DeletedContentBlockCount++;
         stats.ContentBlockCount++;
     }
@@ -213,7 +215,9 @@ internal sealed class ContentBlockFramer
                 payloadBits: payloadBits,
                 parsedBits: 0,
                 wasDecoded: false,
-                fields: []);
+                payload: null,
+                decodedFieldCount: 0,
+                diagnosticFields: []);
             return;
         }
 
@@ -232,14 +236,16 @@ internal sealed class ContentBlockFramer
                 payloadBits: payloadBits,
                 parsedBits: 0,
                 wasDecoded: false,
-                fields: []);
+                payload: null,
+                decodedFieldCount: 0,
+                diagnosticFields: []);
             return;
         }
 
         using var decodedPayload = DecodeContentPayload(payload, payloadBits, channel, replayVersionBranch);
         var context = CreateDecodeContext(exportGroupPath, channel, header, timeSeconds, packetId);
         var beforeRepLayout = decodedPayload.BitsRemaining;
-        var fields = _fieldPayloadParser.ParseRepLayoutProperties(decodedPayload, boundGroup, ref context);
+        var result = _fieldPayloadParser.ParseRepLayoutProperties(decodedPayload, boundGroup, ref context);
         var parsedBits = checked((int)(beforeRepLayout - decodedPayload.BitsRemaining));
         stats.ContentPayloadBitsParsed += parsedBits;
 
@@ -254,7 +260,9 @@ internal sealed class ContentBlockFramer
             payloadBits,
             parsedBits,
             wasDecoded: true,
-            fields);
+            result.Payload,
+            result.DecodedFieldCount,
+            result.DiagnosticFields);
     }
 
     private void FrameClassNetCacheContentBlock(
@@ -287,7 +295,9 @@ internal sealed class ContentBlockFramer
                 payloadBits: payloadBits,
                 parsedBits: 0,
                 wasDecoded: false,
-                fields: []);
+                payload: null,
+                decodedFieldCount: 0,
+                diagnosticFields: []);
             return;
         }
 
@@ -306,7 +316,9 @@ internal sealed class ContentBlockFramer
                 payloadBits,
                 parsedBits: 0,
                 wasDecoded: false,
-                fields: []);
+                payload: null,
+                decodedFieldCount: 0,
+                diagnosticFields: []);
             return;
         }
 
@@ -328,7 +340,9 @@ internal sealed class ContentBlockFramer
             payloadBits,
             parsedBits,
             wasDecoded: true,
-            fields: []);
+            payload: null,
+            decodedFieldCount: 0,
+            diagnosticFields: []);
 
         foreach (var invocation in invocations)
         {
@@ -346,7 +360,9 @@ internal sealed class ContentBlockFramer
                 invocation.PayloadBits,
                 invocation.ParsedBits,
                 invocation.WasDecoded,
-                invocation.Fields));
+                invocation.Payload,
+                invocation.DecodedFieldCount,
+                invocation.DiagnosticFields));
         }
     }
     private static void SkipContentPayload(FBitArchive payload, int bitCount, BunchPayloadStats stats)
@@ -384,7 +400,9 @@ internal sealed class ContentBlockFramer
         int payloadBits,
         int parsedBits,
         bool wasDecoded,
-        IReadOnlyList<DecodedReplayField> fields)
+        object? payload,
+        int decodedFieldCount,
+        IReadOnlyList<DecodedReplayField> diagnosticFields)
     {
         var objectNetGuid = GetObjectNetGuid(header, channel);
         var classNetGuid = header.IsActor ? channel.ArchetypeNetGuid : header.ClassNetGuid;
@@ -410,7 +428,9 @@ internal sealed class ContentBlockFramer
             payloadBits,
             parsedBits,
             wasDecoded,
-            fields));
+            payload,
+            decodedFieldCount,
+            diagnosticFields));
     }
 
     private static NetworkGuid GetObjectNetGuid(ContentBlockHeader header, ActorChannelState channel) =>

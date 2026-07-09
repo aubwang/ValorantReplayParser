@@ -19,11 +19,13 @@ public class FieldPayloadParserTests
         var payload = new BitArchiveReader(payloadData.Bytes, payloadData.BitCount);
         var context = CreateContext("/Game/Test.Test_C");
 
-        var fields = new FieldPayloadParser().ParseContentPayload(payload, boundGroup, ref context);
+        var result = new FieldPayloadParser().ParseContentPayload(payload, boundGroup, ref context);
 
         Assert.Multiple(() =>
         {
-            Assert.That(fields, Is.Empty);
+            Assert.That(result.DecodedFieldCount, Is.EqualTo(0));
+            Assert.That(result.DiagnosticFields, Is.Empty);
+            Assert.That(result.Payload, Is.TypeOf<TestPayloadDescriptor>());
             Assert.That(payload.AtEnd, Is.True);
         });
     }
@@ -41,11 +43,12 @@ public class FieldPayloadParserTests
         var payload = new BitArchiveReader(payloadData.Bytes, payloadData.BitCount);
         var context = CreateContext("/Game/Test.Test_C");
 
-        var fields = new FieldPayloadParser().ParseContentPayload(payload, boundGroup, ref context);
+        var result = new FieldPayloadParser().ParseContentPayload(payload, boundGroup, ref context);
 
         Assert.Multiple(() =>
         {
-            Assert.That(fields, Is.Empty);
+            Assert.That(result.DecodedFieldCount, Is.EqualTo(0));
+            Assert.That(result.DiagnosticFields, Is.Empty);
             Assert.That(payload.AtEnd, Is.True);
         });
     }
@@ -63,15 +66,19 @@ public class FieldPayloadParserTests
         var payload = new BitArchiveReader(payloadData.Bytes, payloadData.BitCount);
         var context = CreateContext("/Game/Test.Test_C");
 
-        var fields = new FieldPayloadParser().ParseContentPayload(payload, boundGroup, ref context);
+        var result = new FieldPayloadParser().ParseContentPayload(payload, boundGroup, ref context);
+        var typedPayload = (TestPayloadDescriptor)result.Payload!;
 
         Assert.Multiple(() =>
         {
-            Assert.That(fields, Has.Count.EqualTo(1));
-            Assert.That(fields[0].Handle, Is.EqualTo(0));
-            Assert.That(fields[0].Name, Is.EqualTo("IntField"));
-            Assert.That(fields[0].Value.Kind, Is.EqualTo(DecodedFieldValueKind.Int32));
-            Assert.That(fields[0].Value.Int32Value, Is.EqualTo(42));
+            Assert.That(result.DecodedFieldCount, Is.EqualTo(1));
+            Assert.That(result.DiagnosticFields, Has.Count.EqualTo(1));
+            Assert.That(result.DiagnosticFields[0].Handle, Is.EqualTo(0));
+            Assert.That(result.DiagnosticFields[0].Name, Is.EqualTo("IntField"));
+            Assert.That(result.DiagnosticFields[0].Value.Kind, Is.EqualTo(DecodedFieldValueKind.Int32));
+            Assert.That(result.DiagnosticFields[0].Value.Int32Value, Is.EqualTo(42));
+            Assert.That(typedPayload.IntField, Is.EqualTo(42));
+            Assert.That(typedPayload.HasDecoded(nameof(TestPayloadDescriptor.IntField)), Is.True);
             Assert.That(payload.AtEnd, Is.True);
         });
     }
@@ -92,13 +99,16 @@ public class FieldPayloadParserTests
         var payload = new BitArchiveReader(payloadData.Bytes, payloadData.BitCount);
         var context = CreateContext("/Game/Test.Test_C");
 
-        var fields = new FieldPayloadParser().ParseContentPayload(payload, boundGroup, ref context);
+        var result = new FieldPayloadParser().ParseContentPayload(payload, boundGroup, ref context);
+        var typedPayload = (TestPayloadDescriptor)result.Payload!;
 
         Assert.Multiple(() =>
         {
-            Assert.That(fields, Has.Count.EqualTo(1));
-            Assert.That(fields[0].Name, Is.EqualTo("IntField"));
-            Assert.That(fields[0].Value.Int32Value, Is.EqualTo(99));
+            Assert.That(result.DecodedFieldCount, Is.EqualTo(1));
+            Assert.That(result.DiagnosticFields, Has.Count.EqualTo(1));
+            Assert.That(result.DiagnosticFields[0].Name, Is.EqualTo("IntField"));
+            Assert.That(result.DiagnosticFields[0].Value.Int32Value, Is.EqualTo(99));
+            Assert.That(typedPayload.IntField, Is.EqualTo(99));
             Assert.That(payload.AtEnd, Is.True);
         });
     }
@@ -120,14 +130,18 @@ public class FieldPayloadParserTests
         var payload = new BitArchiveReader(payloadData.Bytes, payloadData.BitCount);
         var context = CreateContext("/Game/Test.Test_C");
 
-        var fields = new FieldPayloadParser().ParseContentPayload(payload, boundGroup, ref context);
+        var result = new FieldPayloadParser().ParseContentPayload(payload, boundGroup, ref context);
+        var typedPayload = (TestPayloadDescriptor)result.Payload!;
 
         Assert.Multiple(() =>
         {
-            Assert.That(fields, Has.Count.EqualTo(2));
-            Assert.That(fields[0].Value.Int32Value, Is.EqualTo(42));
-            Assert.That(fields[1].Value.Kind, Is.EqualTo(DecodedFieldValueKind.Float));
-            Assert.That(fields[1].Value.FloatValue, Is.EqualTo(3.14f));
+            Assert.That(result.DecodedFieldCount, Is.EqualTo(2));
+            Assert.That(result.DiagnosticFields, Has.Count.EqualTo(2));
+            Assert.That(result.DiagnosticFields[0].Value.Int32Value, Is.EqualTo(42));
+            Assert.That(result.DiagnosticFields[1].Value.Kind, Is.EqualTo(DecodedFieldValueKind.Float));
+            Assert.That(result.DiagnosticFields[1].Value.FloatValue, Is.EqualTo(3.14f));
+            Assert.That(typedPayload.IntField, Is.EqualTo(42));
+            Assert.That(typedPayload.FloatField, Is.EqualTo(3.14f));
             Assert.That(payload.AtEnd, Is.True);
         });
     }
@@ -145,13 +159,16 @@ public class FieldPayloadParserTests
         var payload = new BitArchiveReader(payloadData.Bytes, payloadData.BitCount);
         var context = CreateContext("/Game/Test.Test_C");
 
-        var fields = new FieldPayloadParser().ParseContentPayload(payload, boundGroup, ref context);
+        var result = new FieldPayloadParser().ParseContentPayload(payload, boundGroup, ref context);
+        var typedPayload = (TestPayloadDescriptor)result.Payload!;
 
         Assert.Multiple(() =>
         {
-            Assert.That(fields, Has.Count.EqualTo(1));
-            Assert.That(fields[0].Value.Kind, Is.EqualTo(DecodedFieldValueKind.NetGuid));
-            Assert.That(fields[0].Value.NetGuidValue, Is.EqualTo(42));
+            Assert.That(result.DecodedFieldCount, Is.EqualTo(1));
+            Assert.That(result.DiagnosticFields, Has.Count.EqualTo(1));
+            Assert.That(result.DiagnosticFields[0].Value.Kind, Is.EqualTo(DecodedFieldValueKind.NetGuid));
+            Assert.That(result.DiagnosticFields[0].Value.NetGuidValue, Is.EqualTo(42));
+            Assert.That(typedPayload.GuidField, Is.EqualTo(42));
             Assert.That(payload.AtEnd, Is.True);
         });
     }
@@ -212,15 +229,17 @@ public class FieldPayloadParserTests
                 Decoder = decoder,
                 Name = name,
                 ExportName = name,
+                TargetProperty = typeof(TestPayloadDescriptor).GetProperty(name),
             };
         }
 
         return new BoundExportGroup
         {
-            SourceDescriptor = new ExportGroupDescriptor(path),
+            SourceDescriptor = new TestPayloadDescriptor(path),
             Categories = ExportCategory.All,
             Grammar = FieldStreamGrammar.RepLayoutProperties,
             Enabled = true,
+            CaptureDiagnosticFields = true,
             FieldsByHandle = bindings,
         };
     }
@@ -281,10 +300,37 @@ public class FieldPayloadParserTests
 
     private sealed class SkipRpcDecoder : IRpcDecoder
     {
-        public IReadOnlyList<DecodedReplayField> Decode(ref FieldDecodeContext context, FBitArchive archive)
+        public DecodedPayloadResult Decode(ref FieldDecodeContext context, FBitArchive archive)
         {
             archive.SkipRemaining();
-            return [];
+            return DecodedPayloadResult.Empty;
+        }
+    }
+
+    private sealed class TestPayloadDescriptor : ExportGroupDescriptor<TestPayloadDescriptor>
+    {
+        private readonly string _path;
+
+        public TestPayloadDescriptor()
+            : this("/Game/Test.Test_C")
+        {
+        }
+
+        public TestPayloadDescriptor(string path)
+        {
+            _path = path;
+        }
+
+        public override string Path => _path;
+
+        public int Field { get; set; }
+        public int KnownField { get; set; }
+        public int IntField { get; set; }
+        public float FloatField { get; set; }
+        public uint GuidField { get; set; }
+
+        protected override void Configure()
+        {
         }
     }
 

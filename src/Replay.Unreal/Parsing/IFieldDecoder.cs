@@ -11,5 +11,5 @@ public interface IFieldDecoder : IFieldDecoderDescriptor
 
 public interface IRpcDecoder : IRpcDecoderDescriptor
 {
-    IReadOnlyList<DecodedReplayField> Decode(ref FieldDecodeContext context, FBitArchive archive);
+    DecodedPayloadResult Decode(ref FieldDecodeContext context, FBitArchive archive);
 }

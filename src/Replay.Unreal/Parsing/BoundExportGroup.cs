@@ -8,5 +8,8 @@ public sealed class BoundExportGroup
     public ExportCategory Categories { get; init; }
     public FieldStreamGrammar Grammar { get; init; }
     public bool Enabled { get; init; }
+    public bool CaptureDiagnosticFields { get; init; }
     public required FieldBinding[] FieldsByHandle { get; init; }
+
+    public object CreatePayloadInstance() => SourceDescriptor.CreatePayloadInstance();
 }

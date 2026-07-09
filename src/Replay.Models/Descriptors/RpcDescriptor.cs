@@ -5,6 +5,7 @@ public sealed class RpcDescriptor
     public required string Name { get; init; }
     public required string FunctionExportPath { get; init; }
     public ExportCategory Categories { get; init; }
+    public ExportGroupDescriptor? ParameterDescriptor { get; init; }
     public IReadOnlyList<FieldDescriptor> Fields { get; init; } = [];
     public IRpcDecoderDescriptor? Decoder { get; init; }
 }
@@ -14,11 +15,17 @@ public sealed class RpcDescriptorBuilder
     private readonly List<FieldDescriptorBuilder> _fieldBuilders = [];
     private readonly string _name;
     private readonly string _functionExportPath;
+    private readonly ExportGroupDescriptor? _parameterDescriptor;
 
-    internal RpcDescriptorBuilder(string name, string functionExportPath, ExportCategory categories)
+    internal RpcDescriptorBuilder(
+        string name,
+        string functionExportPath,
+        ExportCategory categories,
+        ExportGroupDescriptor? parameterDescriptor = null)
     {
         _name = name;
         _functionExportPath = functionExportPath;
+        _parameterDescriptor = parameterDescriptor;
         Categories = categories;
     }
 
@@ -35,7 +42,7 @@ public sealed class RpcDescriptorBuilder
         string propertyName,
         ExportCategory categories = ExportCategory.None)
     {
-        var builder = new FieldDescriptorBuilder(exportName, propertyName, handle: null, categories);
+        var builder = new FieldDescriptorBuilder(exportName, propertyName, targetProperty: null, handle: null, categories);
         _fieldBuilders.Add(builder);
         return builder;
     }
@@ -45,17 +52,25 @@ public sealed class RpcDescriptorBuilder
         string propertyName,
         ExportCategory categories = ExportCategory.None)
     {
-        var builder = new FieldDescriptorBuilder(exportName: null, propertyName, handle, categories);
+        var builder = new FieldDescriptorBuilder(exportName: null, propertyName, targetProperty: null, handle, categories);
         _fieldBuilders.Add(builder);
         return builder;
     }
 
     internal RpcDescriptor Build()
     {
-        var fields = new FieldDescriptor[_fieldBuilders.Count];
-        for (var i = 0; i < fields.Length; i++)
+        FieldDescriptor[] fields;
+        if (_fieldBuilders.Count == 0 && _parameterDescriptor is not null)
         {
-            fields[i] = _fieldBuilders[i].Build();
+            fields = _parameterDescriptor.Fields.ToArray();
+        }
+        else
+        {
+            fields = new FieldDescriptor[_fieldBuilders.Count];
+            for (var i = 0; i < fields.Length; i++)
+            {
+                fields[i] = _fieldBuilders[i].Build();
+            }
         }
 
         return new RpcDescriptor
@@ -63,6 +78,7 @@ public sealed class RpcDescriptorBuilder
             Name = _name,
             FunctionExportPath = _functionExportPath,
             Categories = Categories,
+            ParameterDescriptor = _parameterDescriptor,
             Decoder = Decoder,
             Fields = fields,
         };

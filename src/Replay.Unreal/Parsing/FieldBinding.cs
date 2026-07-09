@@ -1,4 +1,5 @@
 using Replay.Models.Descriptors;
+using System.Reflection;
 
 namespace Replay.Unreal.Parsing;
 
@@ -9,4 +10,5 @@ public struct FieldBinding
     public IFieldDecoder? Decoder;
     public string? Name;
     public string? ExportName;
+    public PropertyInfo? TargetProperty;
 }

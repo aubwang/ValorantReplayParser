@@ -47,6 +47,24 @@ public class DescriptorCatalogTests
     }
 
     [Test]
+    public void ExportGroupDescriptor_CreatePayloadInstance_ReturnsFreshTrackedDescriptor()
+    {
+        var descriptor = new TestExportGroupDescriptor();
+
+        var payload = (TestExportGroupDescriptor)descriptor.CreatePayloadInstance();
+        payload.BaseValue = 7;
+        payload.MarkDecoded(nameof(TestExportGroupDescriptor.BaseValue));
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(payload, Is.Not.SameAs(descriptor));
+            Assert.That(payload.BaseValue, Is.EqualTo(7));
+            Assert.That(payload.HasDecoded(nameof(TestExportGroupDescriptor.BaseValue)), Is.True);
+            Assert.That(descriptor.HasDecoded(nameof(TestExportGroupDescriptor.BaseValue)), Is.False);
+        });
+    }
+
+    [Test]
     public void Clear_RemovesAllDescriptors()
     {
         var catalog = new DescriptorCatalog();

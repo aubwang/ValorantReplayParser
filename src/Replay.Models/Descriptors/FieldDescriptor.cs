@@ -1,9 +1,12 @@
+using System.Reflection;
+
 namespace Replay.Models.Descriptors;
 
 public sealed class FieldDescriptor
 {
     public string? ExportName { get; init; }
     public string? PropertyName { get; init; }
+    public PropertyInfo? TargetProperty { get; init; }
     public uint? Handle { get; init; }
     public ExportCategory Categories { get; init; }
     public IFieldDecoderDescriptor? Decoder { get; init; }
@@ -11,10 +14,16 @@ public sealed class FieldDescriptor
 
 public sealed class FieldDescriptorBuilder
 {
-    internal FieldDescriptorBuilder(string? exportName, string? propertyName, uint? handle, ExportCategory categories)
+    internal FieldDescriptorBuilder(
+        string? exportName,
+        string? propertyName,
+        PropertyInfo? targetProperty,
+        uint? handle,
+        ExportCategory categories)
     {
         ExportName = exportName;
         PropertyName = propertyName;
+        TargetProperty = targetProperty;
         Handle = handle;
         Categories = categories;
     }
@@ -22,6 +31,8 @@ public sealed class FieldDescriptorBuilder
     private string? ExportName { get; }
 
     private string? PropertyName { get; }
+
+    private PropertyInfo? TargetProperty { get; }
 
     private uint? Handle { get; }
 
@@ -45,6 +56,7 @@ public sealed class FieldDescriptorBuilder
     {
         ExportName = ExportName,
         PropertyName = PropertyName,
+        TargetProperty = TargetProperty,
         Handle = Handle,
         Categories = Categories,
         Decoder = Decoder,

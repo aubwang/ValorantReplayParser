@@ -1,7 +1,9 @@
+using System.Diagnostics;
 using CliReader;
 using CliReader.Logging;
 using Replay.Encoding.Archives;
 using Microsoft.Extensions.Logging;
+using Replay.Models.Descriptors;
 using Replay.Models.Errors;
 using Replay.Valorant;
 using Serilog;
@@ -27,14 +29,18 @@ try
     var replayPath = args[0];
     logger.LogInformation("Reading replay {ReplayPath}", replayPath);
 
+    var stopwatch = Stopwatch.StartNew();
     using var file = File.OpenRead(replayPath);
     using var archive = new FBinaryArchive(file);
 
     var actorEventLogger = new ActorEventLogger(loggerFactory.CreateLogger<ActorEventLogger>());
     var context = ValorantReplayReader.CreateDefault(
         loggerFactory,
-        actorEventLogger).Read(archive);
+        actorEventLogger,
+        ParseProfile.Default).Read(archive);
 
+    
+    logger.LogInformation("Took: {ReplayName}ms", stopwatch.ElapsedMilliseconds);
     logger.LogInformation("Read replay {ReplayName}", context.ReplayInfo.FriendlyName);
     logger.LogInformation("Version {ReplayVersion}", context.ReplayVersion.Branch);
     logger.LogInformation("Chunks {ChunkCount}", context.ReplayInfo.Chunks.Count);

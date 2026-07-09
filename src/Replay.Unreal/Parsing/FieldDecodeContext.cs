@@ -19,4 +19,5 @@ public sealed class FieldDecodeContext
     public string? ExportGroupPath { get; set; }
     public string? FieldName { get; set; }
     public ExportCategory Categories { get; set; }
+    public bool CaptureDiagnosticFields { get; set; }
 }

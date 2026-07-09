@@ -9,14 +9,11 @@ internal sealed class BaseReplayControllerClassNetCacheDescriptor : ClassNetCach
 
     protected override void Configure()
     {
-        var inputCapture = AddFunction(
-            "ClientReplayReceiveInputEventProcessingCapture",
-            "/Script/ShooterGame.ReplayPlayerController:ClientReplayReceiveInputEventProcessingCapture",
-            ExportCategory.Debug);
-        inputCapture.AddField("PlayerID", "PlayerId", ExportCategory.Debug).Int32OrRaw();
-        inputCapture.AddField("InputEventData", "InputEventData", ExportCategory.Debug)
-            .ByteArrayOrRaw(ValorantPayloadDecoders.MaxInputEventBytes);
-        inputCapture.Decode(ValorantPayloadDecoders.RawRpc("ClientReplayReceiveInputEventProcessingCapture"));
+        AddFunction<ClientReplayReceiveInputEventProcessingCaptureParameters>(
+                "ClientReplayReceiveInputEventProcessingCapture",
+                "/Script/ShooterGame.ReplayPlayerController:ClientReplayReceiveInputEventProcessingCapture",
+                ExportCategory.Debug)
+            .Decode(ValorantPayloadDecoders.RawRpc("ClientReplayReceiveInputEventProcessingCapture"));
 
         AddFunction(
                 "ReplaysClientReceiveRemoteCharacterUpdatesSingleArrayNoAutonomous",
@@ -24,18 +21,66 @@ internal sealed class BaseReplayControllerClassNetCacheDescriptor : ClassNetCach
                 ExportCategory.Movement)
             .Decode(RemoteCharacterUpdatesRpcDecoder.Instance);
 
-        var gamePhaseBegin = AddFunction(
-            "ClientGamePhaseBegin",
-            "/Script/ShooterGame.AresPlayerController:ClientGamePhaseBegin",
-            ExportCategory.GameState);
-        gamePhaseBegin.AddField("NewPhase", "NewPhase", ExportCategory.GameState).EnumByteOrRaw();
-        gamePhaseBegin.Decode(ValorantPayloadDecoders.RawRpc("ClientGamePhaseBegin"));
+        AddFunction<ClientGamePhaseBeginParameters>(
+                "ClientGamePhaseBegin",
+                "/Script/ShooterGame.AresPlayerController:ClientGamePhaseBegin",
+                ExportCategory.GameState)
+            .Decode(ValorantPayloadDecoders.RawRpc("ClientGamePhaseBegin"));
 
-        var gamePhaseEnded = AddFunction(
-            "ClientGamePhaseEnded",
-            "/Script/ShooterGame.AresPlayerController:ClientGamePhaseEnded",
-            ExportCategory.GameState);
-        gamePhaseEnded.AddField("OldPhase", "OldPhase", ExportCategory.GameState).EnumByteOrRaw();
-        gamePhaseEnded.Decode(ValorantPayloadDecoders.RawRpc("ClientGamePhaseEnded"));
+        AddFunction<ClientGamePhaseEndedParameters>(
+                "ClientGamePhaseEnded",
+                "/Script/ShooterGame.AresPlayerController:ClientGamePhaseEnded",
+                ExportCategory.GameState)
+            .Decode(ValorantPayloadDecoders.RawRpc("ClientGamePhaseEnded"));
+    }
+}
+
+public sealed class ClientReplayReceiveInputEventProcessingCaptureParameters
+    : ExportGroupDescriptor<ClientReplayReceiveInputEventProcessingCaptureParameters>
+{
+    public override string Path =>
+        "/Script/ShooterGame.ReplayPlayerController:ClientReplayReceiveInputEventProcessingCapture";
+    public override ExportCategory Categories => ExportCategory.Debug;
+    public override ExportGroupKind Kind => ExportGroupKind.ClassNetCache;
+    public override FieldStreamGrammar Grammar => FieldStreamGrammar.FunctionParameters;
+
+    public int PlayerId { get; set; }
+    public byte[]? InputEventData { get; set; }
+
+    protected override void Configure()
+    {
+        AddProperty("PlayerID", x => x.PlayerId, ExportCategory.Debug).Int32OrRaw();
+        AddProperty(x => x.InputEventData, ExportCategory.Debug)
+            .ByteArrayOrRaw(ValorantPayloadDecoders.MaxInputEventBytes);
+    }
+}
+
+public sealed class ClientGamePhaseBeginParameters : ExportGroupDescriptor<ClientGamePhaseBeginParameters>
+{
+    public override string Path => "/Script/ShooterGame.AresPlayerController:ClientGamePhaseBegin";
+    public override ExportCategory Categories => ExportCategory.GameState;
+    public override ExportGroupKind Kind => ExportGroupKind.ClassNetCache;
+    public override FieldStreamGrammar Grammar => FieldStreamGrammar.FunctionParameters;
+
+    public byte NewPhase { get; set; }
+
+    protected override void Configure()
+    {
+        AddProperty(x => x.NewPhase, ExportCategory.GameState).EnumByteOrRaw();
+    }
+}
+
+public sealed class ClientGamePhaseEndedParameters : ExportGroupDescriptor<ClientGamePhaseEndedParameters>
+{
+    public override string Path => "/Script/ShooterGame.AresPlayerController:ClientGamePhaseEnded";
+    public override ExportCategory Categories => ExportCategory.GameState;
+    public override ExportGroupKind Kind => ExportGroupKind.ClassNetCache;
+    public override FieldStreamGrammar Grammar => FieldStreamGrammar.FunctionParameters;
+
+    public byte OldPhase { get; set; }
+
+    protected override void Configure()
+    {
+        AddProperty(x => x.OldPhase, ExportCategory.GameState).EnumByteOrRaw();
     }
 }

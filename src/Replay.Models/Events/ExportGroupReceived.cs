@@ -24,5 +24,10 @@ public sealed record ExportGroupReceived(
     int PayloadBits,
     int ParsedBits,
     bool WasDecoded,
-    IReadOnlyList<DecodedReplayField> Fields)
-    : ReplayEvent(TimeSeconds, PacketId);
+    object? Payload,
+    int DecodedFieldCount,
+    IReadOnlyList<DecodedReplayField> DiagnosticFields)
+    : ReplayEvent(TimeSeconds, PacketId)
+{
+    public IReadOnlyList<DecodedReplayField> Fields => DiagnosticFields;
+}

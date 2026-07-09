@@ -3,7 +3,7 @@ using System.Reflection;
 
 namespace Replay.Models.Descriptors;
 
-public class ExportGroupDescriptor
+public class ExportGroupDescriptor : IDecodedPayload
 {
     private readonly string? _path;
     private readonly ExportCategory _categories;
@@ -12,6 +12,7 @@ public class ExportGroupDescriptor
     private readonly string? _basePath;
     private readonly ExportGroupDescriptor? _baseDescriptor;
     private readonly IReadOnlyList<FieldDescriptor>? _fields;
+    private readonly HashSet<string> _decodedProperties = new(StringComparer.Ordinal);
 
     protected ExportGroupDescriptor()
     {
@@ -49,6 +50,28 @@ public class ExportGroupDescriptor
     public virtual ExportGroupDescriptor? BaseDescriptor => _baseDescriptor;
 
     public virtual IReadOnlyList<FieldDescriptor> Fields => _fields ?? [];
+
+    public IReadOnlySet<string> DecodedProperties => _decodedProperties;
+
+    public bool HasDecoded(string propertyName) => _decodedProperties.Contains(propertyName);
+
+    public virtual object CreatePayloadInstance()
+    {
+        var descriptorType = GetType();
+        return descriptorType == typeof(ExportGroupDescriptor)
+            ? new ExportGroupDescriptor(Path, Categories, Kind, Grammar, BasePath, BaseDescriptor, Fields)
+            : Activator.CreateInstance(descriptorType, nonPublic: true)
+              ?? throw new InvalidOperationException(
+                  $"Could not create payload instance for descriptor '{descriptorType.FullName}'.");
+    }
+
+    public void MarkDecoded(string propertyName)
+    {
+        if (!string.IsNullOrWhiteSpace(propertyName))
+        {
+            _decodedProperties.Add(propertyName);
+        }
+    }
 }
 
 public abstract class ExportGroupDescriptor<TDescriptor> : ExportGroupDescriptor
@@ -65,8 +88,8 @@ public abstract class ExportGroupDescriptor<TDescriptor> : ExportGroupDescriptor
         Expression<Func<TDescriptor, TValue>> property,
         ExportCategory categories = ExportCategory.None)
     {
-        var propertyName = GetPropertyName(property);
-        return AddField(propertyName, propertyName, handle: null, categories);
+        var propertyInfo = GetProperty(property);
+        return AddField(propertyInfo.Name, propertyInfo, exportName: propertyInfo.Name, handle: null, categories);
     }
 
     protected FieldDescriptorBuilder AddProperty<TValue>(
@@ -74,7 +97,8 @@ public abstract class ExportGroupDescriptor<TDescriptor> : ExportGroupDescriptor
         Expression<Func<TDescriptor, TValue>> property,
         ExportCategory categories = ExportCategory.None)
     {
-        return AddField(exportName, GetPropertyName(property), handle: null, categories);
+        var propertyInfo = GetProperty(property);
+        return AddField(propertyInfo.Name, propertyInfo, exportName, handle: null, categories);
     }
 
     protected FieldDescriptorBuilder AddPropertyHandle<TValue>(
@@ -82,7 +106,8 @@ public abstract class ExportGroupDescriptor<TDescriptor> : ExportGroupDescriptor
         Expression<Func<TDescriptor, TValue>> property,
         ExportCategory categories = ExportCategory.None)
     {
-        return AddField(exportName: null, GetPropertyName(property), handle, categories);
+        var propertyInfo = GetProperty(property);
+        return AddField(propertyInfo.Name, propertyInfo, exportName: null, handle, categories);
     }
 
     protected FieldDescriptorBuilder AddPropertyHandle<TValue>(
@@ -91,21 +116,23 @@ public abstract class ExportGroupDescriptor<TDescriptor> : ExportGroupDescriptor
         Expression<Func<TDescriptor, TValue>> property,
         ExportCategory categories = ExportCategory.None)
     {
-        return AddField(exportName, GetPropertyName(property), handle, categories);
+        var propertyInfo = GetProperty(property);
+        return AddField(propertyInfo.Name, propertyInfo, exportName, handle, categories);
     }
 
     private FieldDescriptorBuilder AddField(
-        string? exportName,
         string? propertyName,
+        PropertyInfo? targetProperty,
+        string? exportName,
         uint? handle,
         ExportCategory categories)
     {
-        var builder = new FieldDescriptorBuilder(exportName, propertyName, handle, categories);
+        var builder = new FieldDescriptorBuilder(exportName, propertyName, targetProperty, handle, categories);
         _fields.Add(builder, GetType().Name, "Descriptor fields");
         return builder;
     }
 
-    private static string GetPropertyName<TValue>(Expression<Func<TDescriptor, TValue>> property)
+    private static PropertyInfo GetProperty<TValue>(Expression<Func<TDescriptor, TValue>> property)
     {
         var expression = property.Body;
         if (expression is UnaryExpression { NodeType: ExpressionType.Convert or ExpressionType.ConvertChecked } unary)
@@ -115,7 +142,7 @@ public abstract class ExportGroupDescriptor<TDescriptor> : ExportGroupDescriptor
 
         if (expression is MemberExpression { Member: PropertyInfo propertyInfo })
         {
-            return propertyInfo.Name;
+            return propertyInfo;
         }
 
         throw new ArgumentException(

@@ -771,15 +771,15 @@ internal sealed class RemoteCharacterUpdatesRpcDecoder : IRpcDecoder
     {
     }
 
-    public IReadOnlyList<DecodedReplayField> Decode(ref FieldDecodeContext context, FBitArchive archive)
+    public DecodedPayloadResult Decode(ref FieldDecodeContext context, FBitArchive archive)
     {
         var endBit = archive.BitLength;
         if (!TryReadBit(archive, endBit))
         {
-            return [];
+            return DecodedPayloadResult.Empty;
         }
 
-        List<DecodedReplayField>? fields = null;
+        DecodedPayloadResult? result = null;
         while (archive.BitPosition < endBit)
         {
             var encodedHandle = ReadIntPacked(archive, endBit, nameof(RemoteCharacterUpdatesRpcDecoder));
@@ -802,16 +802,22 @@ internal sealed class RemoteCharacterUpdatesRpcDecoder : IRpcDecoder
             archive.SeekBits(payloadEndBit);
             EmitMovementEvents(ref context, batch);
 
-            fields ??= new List<DecodedReplayField>(1);
-            fields.Add(new DecodedReplayField(
-                handle,
-                "RemoteCharacterUpdates",
-                "RemoteCharacterUpdates",
-                ExportCategory.Movement,
-                DecodedFieldValue.FromObject(batch)));
+            var diagnostics = context.CaptureDiagnosticFields
+                ? new[]
+                {
+                    new DecodedReplayField(
+                        handle,
+                        "RemoteCharacterUpdates",
+                        "RemoteCharacterUpdates",
+                        ExportCategory.Movement,
+                        DecodedFieldValue.FromObject(batch)),
+                }
+                : [];
+
+            result = new DecodedPayloadResult(batch, DecodedFieldCount: 1, diagnostics);
         }
 
-        return fields ?? [];
+        return result ?? DecodedPayloadResult.Empty;
     }
 
     private static RemoteCharacterUpdateBatch ReadRemoteCharacterUpdates(FBitArchive archive, long endBit)
