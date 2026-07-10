@@ -45,7 +45,7 @@ internal static class DecodedValueAssigner
         }
     }
 
-    private static bool TryGetAssignmentValue(
+    internal static bool TryGetAssignmentValue(
         DecodedFieldValue value,
         Type targetType,
         out object? assignmentValue)

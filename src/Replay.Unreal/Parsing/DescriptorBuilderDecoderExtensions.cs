@@ -52,6 +52,15 @@ public static class DescriptorBuilderDecoderExtensions
     public static FieldDescriptorBuilder FVectorNetQuantizeNormal(this FieldDescriptorBuilder builder) =>
         builder.Decode(PrimitiveDecoders.VectorNetQuantizeNormal);
 
+    public static FieldDescriptorBuilder RepLayoutDynamicArray<TElement>(this FieldDescriptorBuilder builder)
+        where TElement : ExportGroupDescriptor<TElement>, new() =>
+        builder.Decode(RepLayoutArrayDecoders.DynamicArray<TElement>());
+
+    public static FieldDescriptorBuilder RepLayoutDynamicArray<TElement>(
+        this FieldDescriptorBuilder builder,
+        IFieldDecoder elementDecoder) =>
+        builder.Decode(RepLayoutArrayDecoders.DynamicArray<TElement>(elementDecoder));
+
     public static FieldDescriptorBuilder Ignore(this FieldDescriptorBuilder builder) =>
         builder.Decode(PrimitiveDecoders.Skip);
 }
