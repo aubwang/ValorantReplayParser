@@ -1,5 +1,6 @@
 using Replay.Encoding.Archives;
 using Replay.Models.Descriptors;
+using Replay.Models.Unreal;
 
 namespace Replay.Unreal.Parsing;
 
@@ -22,6 +23,8 @@ public static class PrimitiveDecoders
     public static readonly IFieldDecoder VectorNetQuantize10 = new QuantizedVectorDecoder(scaleFactor: 10);
     public static readonly IFieldDecoder VectorNetQuantize100 = new QuantizedVectorDecoder(scaleFactor: 100);
     public static readonly IFieldDecoder VectorNetQuantizeNormal = new FixedNormalVectorDecoder();
+    public static readonly IFieldDecoder RotatorShort = VectorDecoders.RotationShort;
+    public static readonly IFieldDecoder RepMovement = new ReplicatedMovementDecoder();
     public static readonly IFieldDecoder Skip = new SkipDecoder();
 
     public static IFieldDecoder ByteArray(int maxBytes) => new ByteArrayDecoder(maxBytes);
@@ -109,6 +112,48 @@ public static class PrimitiveDecoders
     {
         public DecodedFieldValue Decode(ref FieldDecodeContext context, FBitArchive archive) =>
             DecodedFieldValue.FromNetGuid(archive.ReadIntPacked());
+    }
+
+    private sealed class ReplicatedMovementDecoder : IFieldDecoder
+    {
+        public DecodedFieldValue Decode(ref FieldDecodeContext context, FBitArchive archive)
+        {
+            var bSimulatedPhysicsSleep = archive.ReadBit();
+            var bRepPhysics = archive.ReadBit();
+            var bRepServerFrame = archive.ReadBit();
+            var bRepServerHandle = archive.ReadBit();
+            var location = VectorNetQuantize100.Decode(ref context, archive).VectorValue;
+            var rotation = RotatorShort.Decode(ref context, archive).RotatorValue;
+            var linearVelocity = VectorNetQuantize.Decode(ref context, archive).VectorValue;
+            FVector? angularVelocity = null;
+            uint serverFrame = 0;
+            uint serverPhysicsHandle = 0;
+
+            if (bRepPhysics)
+            {
+                angularVelocity = VectorNetQuantize.Decode(ref context, archive).VectorValue;
+            }
+
+            if (bRepServerFrame)
+            {
+                serverFrame = archive.ReadIntPacked();
+            }
+
+            if (bRepServerHandle)
+            {
+                serverPhysicsHandle = archive.ReadIntPacked();
+            }
+
+            return DecodedFieldValue.FromRepMovement(new FRepMovement(
+                linearVelocity,
+                angularVelocity,
+                location,
+                rotation,
+                bSimulatedPhysicsSleep,
+                bRepPhysics,
+                serverFrame,
+                serverPhysicsHandle));
+        }
     }
 
     private sealed class ByteArrayDecoder : IFieldDecoder

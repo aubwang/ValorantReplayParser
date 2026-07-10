@@ -68,6 +68,7 @@ public class ValorantDescriptorsTests
             "/Script/ShooterGame.ChildRegionDamageSectionComponent",
             "/Script/ShooterGame.AttachedDamageSectionComponent",
             "/Script/ShooterGame.FiringStateComponent",
+            "/Game/Characters/Phoenix/S0/Ability_Q/Production/Projectile_Phoenix_Q_FlameWall_ThroughWall.Projectile_Phoenix_Q_FlameWall_ThroughWall_C",
         ];
 
         var descriptors = ValorantDescriptors.CreateCatalog().ExportGroupDescriptors;

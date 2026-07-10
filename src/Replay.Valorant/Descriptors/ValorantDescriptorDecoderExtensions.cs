@@ -32,6 +32,9 @@ internal static class ValorantDescriptorDecoderExtensions
     public static FieldDescriptorBuilder FVectorOrRaw(this FieldDescriptorBuilder builder) =>
         builder.Decode(ValorantPayloadDecoders.PrimitiveOrRaw(PrimitiveDecoders.Vector, "FVector"));
 
+    public static FieldDescriptorBuilder FRepMovement(this FieldDescriptorBuilder builder) =>
+        builder.Decode(ValorantPayloadDecoders.PrimitiveOrRaw(PrimitiveDecoders.RepMovement, "FRepMovement"));
+
     public static FieldDescriptorBuilder ByteArrayOrRaw(this FieldDescriptorBuilder builder, int maxBytes) =>
         builder.Decode(ValorantPayloadDecoders.PrimitiveOrRaw(PrimitiveDecoders.ByteArray(maxBytes), "TArray<uint8>"));
 }

@@ -9,6 +9,7 @@ public static class PhoenixDescriptors
         return
         [
             new PhoenixAgentDescriptor(),
+            new FlameWallDescriptor(),
         ];
     }
 }

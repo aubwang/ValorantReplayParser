@@ -63,6 +63,7 @@ internal static class DecodedValueAssigner
             DecodedFieldValueKind.Vector => value.VectorValue,
             DecodedFieldValueKind.Rotator => value.RotatorValue,
             DecodedFieldValueKind.Object => value.ObjectValue,
+            DecodedFieldValueKind.RepMovement => value.RepMovementValue,
             _ => null,
         };
 

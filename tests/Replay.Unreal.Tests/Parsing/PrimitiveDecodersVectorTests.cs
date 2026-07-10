@@ -90,6 +90,78 @@ public class PrimitiveDecodersVectorTests
         });
     }
 
+    [Test]
+    public void RepMovement_DecodesRequiredFields()
+    {
+        var archive = CreateArchive(writer =>
+        {
+            writer.WriteBit(false);
+            writer.WriteBit(false);
+            writer.WriteBit(false);
+            writer.WriteBit(false);
+            writer.WriteQuantizedVector(1.23, -4.56, 7.89, scaleFactor: 100, componentBitCount: 11);
+            writer.WriteCompressedShortRotatorComponent(0);
+            writer.WriteCompressedShortRotatorComponent(0);
+            writer.WriteCompressedShortRotatorComponent(0);
+            writer.WriteQuantizedVector(10, -2, 3, scaleFactor: 1, componentBitCount: 6);
+        });
+        var context = new FieldDecodeContext();
+
+        var value = PrimitiveDecoders.RepMovement.Decode(ref context, archive);
+        var movement = value.RepMovementValue;
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(value.Kind, Is.EqualTo(DecodedFieldValueKind.RepMovement));
+            AssertVector(movement.Location!.Value, 1.23, -4.56, 7.89);
+            AssertVector(movement.LinearVelocity!.Value, 10, -2, 3);
+            Assert.That(movement.Rotation, Is.EqualTo(new FRotator(0, 0, 0)));
+            Assert.That(movement.AngularVelocity, Is.Null);
+            Assert.That(movement.bSimulatedPhysicsSleep, Is.False);
+            Assert.That(movement.bRepPhysics, Is.False);
+            Assert.That(movement.ServerFrame, Is.Zero);
+            Assert.That(movement.ServerPhysicsHandle, Is.Zero);
+            Assert.That(archive.AtEnd, Is.True);
+        });
+    }
+
+    [Test]
+    public void RepMovement_DecodesOptionalFields()
+    {
+        var archive = CreateArchive(writer =>
+        {
+            writer.WriteBit(true);
+            writer.WriteBit(true);
+            writer.WriteBit(true);
+            writer.WriteBit(true);
+            writer.WriteQuantizedVector(1.23, -4.56, 7.89, scaleFactor: 100, componentBitCount: 11);
+            writer.WriteCompressedShortRotatorComponent(16384);
+            writer.WriteCompressedShortRotatorComponent(32768);
+            writer.WriteCompressedShortRotatorComponent(49152);
+            writer.WriteQuantizedVector(10, -2, 3, scaleFactor: 1, componentBitCount: 6);
+            writer.WriteQuantizedVector(-4, 5, -6, scaleFactor: 1, componentBitCount: 5);
+            writer.WriteIntPacked(123);
+            writer.WriteIntPacked(456);
+        });
+        var context = new FieldDecodeContext();
+
+        var value = PrimitiveDecoders.RepMovement.Decode(ref context, archive);
+        var movement = value.RepMovementValue;
+
+        Assert.Multiple(() =>
+        {
+            AssertVector(movement.AngularVelocity!.Value, -4, 5, -6);
+            Assert.That(movement.Rotation!.Value.Pitch, Is.EqualTo(90).Within(1e-6));
+            Assert.That(movement.Rotation.Value.Yaw, Is.EqualTo(180).Within(1e-6));
+            Assert.That(movement.Rotation.Value.Roll, Is.EqualTo(270).Within(1e-6));
+            Assert.That(movement.bSimulatedPhysicsSleep, Is.True);
+            Assert.That(movement.bRepPhysics, Is.True);
+            Assert.That(movement.ServerFrame, Is.EqualTo(123));
+            Assert.That(movement.ServerPhysicsHandle, Is.EqualTo(456));
+            Assert.That(archive.AtEnd, Is.True);
+        });
+    }
+
     [TestCase(1, 10.0, -2.0, 3.0, 6)]
     [TestCase(10, 1.2, -3.4, 5.6, 7)]
     [TestCase(100, 1.23, -4.56, 7.89, 11)]
@@ -155,6 +227,8 @@ public class PrimitiveDecodersVectorTests
 
         public int BitCount => _bits.Count;
 
+        public void WriteBit(bool value) => _bits.Add(value);
+
         public void WriteSerializedInt(uint value, int maxValue)
         {
             uint writtenValue = 0;
@@ -190,6 +264,30 @@ public class PrimitiveDecodersVectorTests
             WriteFixedNormalComponent(z);
         }
 
+        public void WriteCompressedShortRotatorComponent(ushort value)
+        {
+            WriteBit(value != 0);
+            if (value != 0)
+            {
+                WriteUInt16(value);
+            }
+        }
+
+        public void WriteIntPacked(uint value)
+        {
+            do
+            {
+                var byteValue = (byte)((value & 0x7F) << 1);
+                value >>= 7;
+                if (value != 0)
+                {
+                    byteValue |= 1;
+                }
+
+                WriteByte(byteValue);
+            } while (value != 0);
+        }
+
         public void WriteSingle(float value) => WriteUInt32(BitConverter.SingleToUInt32Bits(value));
 
         public void WriteDouble(double value) => WriteUInt64(BitConverter.DoubleToUInt64Bits(value));
@@ -220,6 +318,14 @@ public class PrimitiveDecodersVectorTests
         }
 
         private void WriteUInt32(uint value)
+        {
+            foreach (var b in BitConverter.GetBytes(value))
+            {
+                WriteByte(b);
+            }
+        }
+
+        private void WriteUInt16(ushort value)
         {
             foreach (var b in BitConverter.GetBytes(value))
             {
