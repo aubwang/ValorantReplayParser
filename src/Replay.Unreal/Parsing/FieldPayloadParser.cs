@@ -40,6 +40,12 @@ public class FieldPayloadParser
         List<DecodedReplayField>? diagnosticFields = context.CaptureDiagnosticFields ? [] : null;
         while (!payload.AtEnd)
         {
+            if (boundGroup.Grammar is FieldStreamGrammar.FunctionParameters && payload.BitsRemaining == 1)
+            {
+                payload.SkipBits(1);
+                break;
+            }
+
             if (ParseProperty(payload, boundGroup, payloadObject, ref context, ref decodedFieldCount, diagnosticFields))
             {
                 return new DecodedPayloadResult(payloadObject, decodedFieldCount, diagnosticFields ?? []);
@@ -162,6 +168,11 @@ public class FieldPayloadParser
 
         var handle = checked((int)(encodedHandle - 1));
         var payloadBits = payload.ReadIntPacked();
+        if (payloadBits == 0)
+        {
+            return false;
+        }
+
         if (payloadBits > int.MaxValue || payload.BitsRemaining < payloadBits)
         {
             GetLogger(context).LogWarning(
@@ -184,22 +195,42 @@ public class FieldPayloadParser
         context.Categories = fieldBinding.Categories;
 
         var fieldPayload = payload.ReadSubArchive((int)payloadBits);
-        var decodedValue = fieldBinding.Decoder.Decode(ref context, fieldPayload);
-        if (!fieldPayload.AtEnd)
+        try
         {
-            fieldPayload.EnsureFullyConsumed($"field '{fieldBinding.Name}' (handle {handle})");
-        }
+            var decodedValue = fieldBinding.Decoder.Decode(ref context, fieldPayload);
+            if (!fieldPayload.AtEnd)
+            {
+                fieldPayload.EnsureFullyConsumed($"field '{fieldBinding.Name}' (handle {handle})");
+            }
 
-        if (decodedValue.HasValue)
+            if (decodedValue.HasValue)
+            {
+                DecodedValueAssigner.Assign(payloadObject, fieldBinding, decodedValue);
+                decodedFieldCount++;
+                diagnosticFields?.Add(new DecodedReplayField(
+                    handle,
+                    fieldBinding.Name,
+                    fieldBinding.ExportName,
+                    fieldBinding.Categories,
+                    decodedValue));
+            }
+        }
+        catch (Exception exception)
         {
-            decodedFieldCount++;
-            DecodedValueAssigner.Assign(payloadObject, fieldBinding, decodedValue);
-            diagnosticFields?.Add(new DecodedReplayField(
-                handle,
+            GetLogger(context).LogError(
+                exception,
+                "Failed to decode field '{FieldName}' (export '{ExportName}', handle {Handle}) in export group " +
+                "'{ExportGroupPath}' for packet {PacketId} on channel {ChannelIndex} at field payload position " +
+                "{FieldPayloadPosition} of {FieldPayloadLength} bits.",
                 fieldBinding.Name,
                 fieldBinding.ExportName,
-                fieldBinding.Categories,
-                decodedValue));
+                handle,
+                context.ExportGroupPath ?? boundGroup.SourceDescriptor.Path,
+                context.CurrentPacketId,
+                context.ChannelIndex,
+                fieldPayload.Position,
+                fieldPayload.Length);
+            throw;
         }
 
         return false;

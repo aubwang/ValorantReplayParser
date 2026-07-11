@@ -81,6 +81,44 @@ public class PrimitiveDecodersScalarTests
         });
     }
 
+    [Test]
+    public void Guid_ReadsFourLittleEndianUnrealWords()
+    {
+        var archive = CreateArchive(writer =>
+        {
+            writer.WriteUInt32(0x00112233u);
+            writer.WriteUInt32(0x44556677u);
+            writer.WriteUInt32(0x8899AABBu);
+            writer.WriteUInt32(0xCCDDEEFFu);
+        });
+        var context = new FieldDecodeContext();
+
+        var value = PrimitiveDecoders.Guid.Decode(ref context, archive);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(value.Kind, Is.EqualTo(DecodedFieldValueKind.Guid));
+            Assert.That(value.GuidValue, Is.EqualTo(Guid.Parse("00112233-4455-6677-8899-aabbccddeeff")));
+            Assert.That(archive.AtEnd, Is.True);
+        });
+    }
+
+    [Test]
+    public void SerializedInt_ReadsValueUsingKnownMaximum()
+    {
+        var archive = new BitArchiveReader(new byte[] { 0x05 }, bitCount: 4);
+        var context = new FieldDecodeContext();
+
+        var value = PrimitiveDecoders.SerializedInt(maxValue: 16).Decode(ref context, archive);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(value.Kind, Is.EqualTo(DecodedFieldValueKind.UInt32));
+            Assert.That(value.UInt32Value, Is.EqualTo(5));
+            Assert.That(archive.AtEnd, Is.True);
+        });
+    }
+
     private static BitArchiveReader CreateArchive(Action<BitWriter> write)
     {
         var writer = new BitWriter();
@@ -105,6 +143,14 @@ public class PrimitiveDecodersScalarTests
         }
 
         public void WriteInt32(int value)
+        {
+            foreach (var b in BitConverter.GetBytes(value))
+            {
+                WriteByte(b);
+            }
+        }
+
+        public void WriteUInt32(uint value)
         {
             foreach (var b in BitConverter.GetBytes(value))
             {

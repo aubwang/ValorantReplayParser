@@ -35,7 +35,7 @@ public abstract class FBitArchive : FArchive
     public abstract void SkipBits(long count);
 
     public override byte ReadByte() => (byte)ReadBitsToUInt64(8);
-
+    
     public override bool TryReadByte(out byte value)
     {
         if (TryReadBitsToUInt64(8, out var bits))

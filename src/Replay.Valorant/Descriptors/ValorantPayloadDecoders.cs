@@ -21,23 +21,6 @@ internal static class ValorantPayloadDecoders
     public static IFieldDecoder PrimitiveOrRaw(IFieldDecoder primitiveDecoder, string typeName) =>
         new PrimitiveOrRawDecoder(primitiveDecoder, typeName);
 
-    private sealed class RawPayloadDecoder : IFieldDecoder
-    {
-        private readonly string _typeName;
-
-        public RawPayloadDecoder(string typeName)
-        {
-            _typeName = typeName;
-        }
-
-        public DecodedFieldValue Decode(ref FieldDecodeContext context, FBitArchive archive)
-        {
-            var bitCount = archive.BitsRemaining;
-            archive.SkipRemaining();
-            return DecodedFieldValue.FromObject(new ValorantRawPayload(_typeName, checked((int)bitCount)));
-        }
-    }
-
     private sealed class PrimitiveOrRawDecoder : IFieldDecoder
     {
         private readonly IFieldDecoder _primitiveDecoder;
@@ -71,6 +54,17 @@ internal static class ValorantPayloadDecoders
             }
 
             return _rawDecoder.Decode(ref context, archive);
+        }
+    }
+
+    private sealed class RawPayloadDecoder(string typeName) : IFieldDecoder
+    {
+        public DecodedFieldValue Decode(ref FieldDecodeContext context, FBitArchive archive)
+        {
+            var bitCount = checked((int)archive.BitsRemaining);
+            var data = archive.ReadBits(bitCount);
+
+            return DecodedFieldValue.FromObject(new ValorantRawPayload(typeName, bitCount, data));
         }
     }
 
@@ -135,7 +129,10 @@ internal static class ValorantPayloadDecoders
     }
 }
 
-public sealed record ValorantRawPayload(string TypeName, int BitCount)
+public sealed record ValorantRawPayload(
+    string TypeName,
+    int BitCount,
+    ReadOnlyMemory<byte> Data = default)
 {
     public override string ToString() => $"{TypeName}({BitCount} bits)";
 }

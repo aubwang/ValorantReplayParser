@@ -1,5 +1,6 @@
 using Replay.Encoding.Archives;
 using Replay.Models.Descriptors;
+using Replay.Models.Unreal;
 
 namespace Replay.Unreal.Parsing;
 
@@ -9,6 +10,7 @@ public static class VectorDecoders
     public static readonly IFieldDecoder Vector1 = new QuantizedVectorDecoder(scaleFactor: 1);
     public static readonly IFieldDecoder VectorDouble = new DoubleVectorDecoder();
     public static readonly IFieldDecoder VectorFloat = new FloatVectorDecoder();
+    public static readonly IFieldDecoder Transform = new FTransformDecoder();
     public static readonly IFieldDecoder RotationShort = new ShortRotationDecoder();
 
     private sealed class QuantizedVectorDecoder : IFieldDecoder
@@ -26,6 +28,14 @@ public static class VectorDecoders
                 ? ArchiveVectorReaders.ReadQuantizedVector(archive, _scaleFactor)
                 : ArchiveVectorReaders.ReadDoubleVector(archive);
             return DecodedFieldValue.FromVector(vector);
+        }
+    }
+    
+    private sealed class FTransformDecoder : IFieldDecoder
+    {
+        public DecodedFieldValue Decode(ref FieldDecodeContext context, FBitArchive archive)
+        {
+            return DecodedFieldValue.FromTransform(ArchiveVectorReaders.ReadTransform(archive));
         }
     }
 

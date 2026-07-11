@@ -54,6 +54,33 @@ public class FieldPayloadParserTests
     }
 
     [Test]
+    public void ParseContentPayload_ZeroBitField_DoesNotInvokeDecoder()
+    {
+        var boundGroup = CreateSimpleBoundGroup("/Game/Test.Test_C", fields:
+        [
+            (0, true, PrimitiveDecoders.Int32, "KnownField"),
+            (1, true, PrimitiveDecoders.Int32, "IntField"),
+        ]);
+        var payloadData = BuildFieldPayload(
+            (handle: 0u, bitCount: 0, data: []),
+            (handle: 1u, bitCount: 32, data: BitConverter.GetBytes(42)));
+        var payload = new BitArchiveReader(payloadData.Bytes, payloadData.BitCount);
+        var context = CreateContext("/Game/Test.Test_C");
+
+        var result = new FieldPayloadParser().ParseContentPayload(payload, boundGroup, ref context);
+        var typedPayload = (TestPayloadDescriptor)result.Payload!;
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.DecodedFieldCount, Is.EqualTo(1));
+            Assert.That(typedPayload.KnownField, Is.Zero);
+            Assert.That(typedPayload.HasDecoded(nameof(TestPayloadDescriptor.KnownField)), Is.False);
+            Assert.That(typedPayload.IntField, Is.EqualTo(42));
+            Assert.That(payload.AtEnd, Is.True);
+        });
+    }
+
+    [Test]
     public void ParseContentPayload_EnabledInt32_ReturnsDecodedField()
     {
         var boundGroup = CreateSimpleBoundGroup("/Game/Test.Test_C", fields:
@@ -174,6 +201,34 @@ public class FieldPayloadParserTests
     }
 
     [Test]
+    public void ParseRepLayoutProperties_FunctionParameters_ConsumesZeroTerminatorBit()
+    {
+        var boundGroup = CreateSimpleBoundGroup(
+            "/Game/Test.Test_C:SomeFunction",
+            FieldStreamGrammar.FunctionParameters,
+            (0, true, PrimitiveDecoders.Int32, "IntField"));
+        var payloadData = BuildFunctionParameterPayload(
+            terminator: false,
+            (handle: 0u, bitCount: 32, data: BitConverter.GetBytes(42)));
+        var payload = new BitArchiveReader(payloadData.Bytes, payloadData.BitCount);
+        var context = CreateContext("/Game/Test.Test_C:SomeFunction");
+
+        var result = new FieldPayloadParser().ParseRepLayoutProperties(
+            payload,
+            boundGroup,
+            ref context,
+            readPropertyChecksum: false);
+        var typedPayload = (TestPayloadDescriptor)result.Payload!;
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.DecodedFieldCount, Is.EqualTo(1));
+            Assert.That(typedPayload.IntField, Is.EqualTo(42));
+            Assert.That(payload.AtEnd, Is.True);
+        });
+    }
+
+    [Test]
     public void ParseClassNetCachePayload_HandleUsesSerializedIntGrammar()
     {
         var boundCache = new BoundClassNetCache
@@ -216,6 +271,7 @@ public class FieldPayloadParserTests
 
     private static BoundExportGroup CreateSimpleBoundGroup(
         string path,
+        FieldStreamGrammar grammar = FieldStreamGrammar.RepLayoutProperties,
         params (int Handle, bool Enabled, IFieldDecoder? Decoder, string Name)[] fields)
     {
         var maxHandle = fields.Length > 0 ? fields.Max(f => f.Handle) + 1 : 0;
@@ -237,7 +293,7 @@ public class FieldPayloadParserTests
         {
             SourceDescriptor = new TestPayloadDescriptor(path),
             Categories = ExportCategory.All,
-            Grammar = FieldStreamGrammar.RepLayoutProperties,
+            Grammar = grammar,
             Enabled = true,
             CaptureDiagnosticFields = true,
             FieldsByHandle = bindings,
@@ -257,6 +313,22 @@ public class FieldPayloadParserTests
 
         WriteIntPacked(bits, 0);
 
+        return new FieldPayloadData(PackBits(bits), bits.Count);
+    }
+
+    private static FieldPayloadData BuildFunctionParameterPayload(
+        bool terminator,
+        params (uint handle, int bitCount, byte[] data)[] fields)
+    {
+        var bits = new List<bool>();
+        foreach (var (handle, bitCount, data) in fields)
+        {
+            WriteIntPacked(bits, handle + 1);
+            WriteIntPacked(bits, (uint)bitCount);
+            WriteBits(bits, data, bitCount);
+        }
+
+        bits.Add(terminator);
         return new FieldPayloadData(PackBits(bits), bits.Count);
     }
 

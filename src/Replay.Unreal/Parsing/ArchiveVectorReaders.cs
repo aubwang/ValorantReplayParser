@@ -66,6 +66,12 @@ internal static class ArchiveVectorReaders
             ReadCompressedShortRotatorComponent(archive),
             ReadCompressedShortRotatorComponent(archive));
 
+    public static FQuat ReadQuaternion(FBitArchive archive) => new(archive.ReadSingle(), archive.ReadSingle(),
+        archive.ReadSingle(), archive.ReadSingle());
+    
+    public static FTransform ReadTransform(FBitArchive archive) =>
+        new(ReadQuaternion(archive), ReadFloatVector(archive), ReadFloatVector(archive));
+
     private static FVector ReadPackedQuantizedVector(
         FBitArchive archive,
         int componentBitCount,

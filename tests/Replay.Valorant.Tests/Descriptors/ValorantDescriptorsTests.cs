@@ -1,4 +1,6 @@
+using Replay.Encoding.Archives;
 using Replay.Models.Descriptors;
+using Replay.Unreal.Parsing;
 using Replay.Valorant.Descriptors;
 
 namespace Replay.Valorant.Tests.Descriptors;
@@ -169,17 +171,27 @@ public class ValorantDescriptorsTests
     }
 
     [Test]
-    public void CreateCatalog_IncludesFiringStateAttackVector16FromDump()
+    public void CreateCatalog_KnownPrimitiveFailure_ThrowsInsteadOfReturningRawPayload()
     {
-        var descriptor = ValorantDescriptors.CreateCatalog()
-            .ExportGroupDescriptors
-            .Single(descriptor => descriptor.Path == "/Script/ShooterGame.FiringStateComponent");
+        var healthField = FindExportField(
+            ValorantDescriptors.CreateCatalog(),
+            "/Script/ShooterGame.AresAttributeSet",
+            "Health");
+        Assert.That(healthField.Decoder, Is.AssignableTo<IFieldDecoder>());
 
-        var exportNames = descriptor.Fields
-            .Select(field => field.ExportName)
-            .ToHashSet(StringComparer.Ordinal);
+        var archive = new BitArchiveReader(new byte[] { 0xA6 }, bitCount: 8);
+        var context = new FieldDecodeContext { FieldName = healthField.PropertyName };
 
-        Assert.That(exportNames.Contains("FiringState.AttackVector.16"), Is.True);
+        var exception = Assert.Throws<ArchiveReadException>(() =>
+            ((IFieldDecoder)healthField.Decoder!).Decode(ref context, archive));
+
+        Assert.That(exception!.ErrorCode, Is.EqualTo(ArchiveErrorCode.EndOfArchive));
+    }
+
+    private static FieldDescriptor FindExportField(DescriptorCatalog catalog, string descriptorPath, string fieldName)
+    {
+        var descriptor = catalog.ExportGroupDescriptors.Single(candidate => candidate.Path == descriptorPath);
+        return descriptor.Fields.Single(field => field.PropertyName == fieldName);
     }
 
     private static void AssertDecodedRpcFields(RpcDescriptor descriptor, params string[] fieldNames)

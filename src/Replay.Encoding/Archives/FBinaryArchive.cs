@@ -17,17 +17,6 @@ public class FBinaryArchive : ByteArchiveReader
     {
     }
 
-    public Guid ReadGuid()
-    {
-        var a = ReadUInt32();
-        var b = ReadUInt32();
-        var c = ReadUInt32();
-        var d = ReadUInt32();
-
-        return Guid.Parse(
-            $"{a:X8}-{b >> 16:X4}-{b & 0xFFFF:X4}-{c >> 16:X4}-{c & 0xFFFF:X4}{d:X8}");
-    }
-
     public FVector ReadFVector() => new(ReadSingle(), ReadSingle(), ReadSingle());
 
     public FQuat ReadFQuat() => new(ReadSingle(), ReadSingle(), ReadSingle(), ReadSingle());

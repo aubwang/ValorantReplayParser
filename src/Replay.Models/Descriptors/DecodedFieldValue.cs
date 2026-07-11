@@ -13,9 +13,11 @@ public readonly record struct DecodedFieldValue
         float floatValue = 0,
         double doubleValue = 0,
         uint netGuidValue = 0,
+        Guid guidValue = default,
         string? stringValue = null,
         FVector vectorValue = default,
         FRotator rotatorValue = default,
+        FTransform tranformValue = default,
         FRepMovement repMovement = default,
         object? objectValue = null)
     {
@@ -32,6 +34,8 @@ public readonly record struct DecodedFieldValue
         RotatorValue = rotatorValue;
         RepMovementValue = repMovement;
         ObjectValue = objectValue;
+        TranformValue = tranformValue;
+        GuidValue = guidValue;
     }
 
     public static DecodedFieldValue None { get; } = new(DecodedFieldValueKind.None);
@@ -52,11 +56,14 @@ public readonly record struct DecodedFieldValue
 
     public uint NetGuidValue { get; }
 
+    public Guid GuidValue { get; }
+
     public string? StringValue { get; }
 
     public FVector VectorValue { get; }
 
     public FRotator RotatorValue { get; }
+    public FTransform TranformValue { get; }
 
     public FRepMovement RepMovementValue { get; }
 
@@ -77,12 +84,17 @@ public readonly record struct DecodedFieldValue
     public static DecodedFieldValue FromDouble(double value) => new(DecodedFieldValueKind.Double, doubleValue: value);
 
     public static DecodedFieldValue FromNetGuid(uint value) => new(DecodedFieldValueKind.NetGuid, netGuidValue: value);
+    public static DecodedFieldValue FromGuid(Guid value) => new(DecodedFieldValueKind.Guid, guidValue: value);
 
     public static DecodedFieldValue FromString(string value) => new(DecodedFieldValueKind.String, stringValue: value);
 
     public static DecodedFieldValue FromVector(FVector value) => new(DecodedFieldValueKind.Vector, vectorValue: value);
 
-    public static DecodedFieldValue FromRotator(FRotator value) => new(DecodedFieldValueKind.Rotator, rotatorValue: value);
+    public static DecodedFieldValue FromRotator(FRotator value) =>
+        new(DecodedFieldValueKind.Rotator, rotatorValue: value);
+
+    public static DecodedFieldValue FromTransform(FTransform value) =>
+        new(DecodedFieldValueKind.Transform, tranformValue: value);
 
     public static DecodedFieldValue FromRepMovement(FRepMovement value) =>
         new(DecodedFieldValueKind.RepMovement, repMovement: value);
@@ -101,8 +113,10 @@ public enum DecodedFieldValueKind
     Double,
     String,
     NetGuid,
+    Guid,
     Vector,
     Rotator,
+    Transform,
     RepMovement,
     Object,
 }

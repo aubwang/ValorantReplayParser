@@ -16,6 +16,7 @@ public static class PrimitiveDecoders
     public static readonly IFieldDecoder FString = new FStringDecoder();
     public static readonly IFieldDecoder FName = new FNameDecoder();
     public static readonly IFieldDecoder ObjectNetGuid = new ObjectNetGuidDecoder();
+    public static readonly IFieldDecoder Guid = new GuidDecoder();
     public static readonly IFieldDecoder Vector = new DoubleVectorDecoder();
     public static readonly IFieldDecoder VectorFloat = new FloatVectorDecoder();
     public static readonly IFieldDecoder VectorDouble = Vector;
@@ -24,10 +25,13 @@ public static class PrimitiveDecoders
     public static readonly IFieldDecoder VectorNetQuantize100 = new QuantizedVectorDecoder(scaleFactor: 100);
     public static readonly IFieldDecoder VectorNetQuantizeNormal = new FixedNormalVectorDecoder();
     public static readonly IFieldDecoder RotatorShort = VectorDecoders.RotationShort;
+    public static readonly IFieldDecoder Transform = VectorDecoders.Transform;
     public static readonly IFieldDecoder RepMovement = new ReplicatedMovementDecoder();
     public static readonly IFieldDecoder Skip = new SkipDecoder();
 
     public static IFieldDecoder ByteArray(int maxBytes) => new ByteArrayDecoder(maxBytes);
+
+    public static IFieldDecoder SerializedInt(int maxValue) => new SerializedIntDecoder(maxValue);
 
     private sealed class FloatVectorDecoder : IFieldDecoder
     {
@@ -112,6 +116,30 @@ public static class PrimitiveDecoders
     {
         public DecodedFieldValue Decode(ref FieldDecodeContext context, FBitArchive archive) =>
             DecodedFieldValue.FromNetGuid(archive.ReadIntPacked());
+    }
+
+    private sealed class SerializedIntDecoder : IFieldDecoder
+    {
+        private readonly int _maxValue;
+
+        public SerializedIntDecoder(int maxValue)
+        {
+            if (maxValue <= 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(maxValue), maxValue, null);
+            }
+
+            _maxValue = maxValue;
+        }
+
+        public DecodedFieldValue Decode(ref FieldDecodeContext context, FBitArchive archive) =>
+            DecodedFieldValue.FromUInt32(archive.ReadSerializedInt(_maxValue));
+    }
+    
+    private sealed class GuidDecoder : IFieldDecoder
+    {
+        public DecodedFieldValue Decode(ref FieldDecodeContext context, FBitArchive archive) =>
+            DecodedFieldValue.FromGuid(archive.ReadGuid());
     }
 
     private sealed class ReplicatedMovementDecoder : IFieldDecoder

@@ -61,6 +61,17 @@ public abstract class FArchive : IDisposable
 
     public uint ReadUInt32() => BinaryPrimitives.ReadUInt32LittleEndian(ReadBytes(sizeof(uint)).Span);
 
+    public Guid ReadGuid()
+    {
+        var a = ReadUInt32();
+        var b = ReadUInt32();
+        var c = ReadUInt32();
+        var d = ReadUInt32();
+
+        return Guid.Parse(
+            $"{a:X8}-{b >> 16:X4}-{b & 0xFFFF:X4}-{c >> 16:X4}-{c & 0xFFFF:X4}{d:X8}");
+    }
+
     public int ReadInt32() => BinaryPrimitives.ReadInt32LittleEndian(ReadBytes(sizeof(int)).Span);
 
     public ulong ReadUInt64() => BinaryPrimitives.ReadUInt64LittleEndian(ReadBytes(sizeof(ulong)).Span);
