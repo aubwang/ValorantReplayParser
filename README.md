@@ -85,7 +85,11 @@ dotnet test "ValorantReplayParser.sln"
 dotnet run --project "src\CliReader\CliReader.csproj" -- "C:\path\to\replay.vrf"
 ```
 
-
 ## Special Thanks
 * To the folks from [FortniteReplayDecompressor](https://github.com/Shiqan/FortniteReplayDecompressor) for their amazing work and documentation of the replay system
 * GPT 5.5 for reverse engineering VALORANT payload transformation & movement encoding
+
+## Disclaimer
+
+This project is an independent, community-developed tool and is not affiliated with, endorsed by, sponsored by, or approved by Riot Games. VALORANT, Riot Games, and all related trademarks are the property of Riot Games, Inc.
+
