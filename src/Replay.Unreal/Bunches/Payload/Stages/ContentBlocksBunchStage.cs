@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Logging;
 using Replay.Encoding.Archives;
 
 namespace Replay.Unreal.Bunches.Payload.Stages;
@@ -35,8 +36,17 @@ internal sealed class ContentBlocksBunchStage : IBunchPayloadStage
                 context.ReaderContext.ReplayVersion.Branch);
             return BunchStageResult.Continue;
         }
-        catch (ArchiveReadException)
+        catch (ArchiveReadException exception)
         {
+            context.ReaderContext.LoggerFactory?
+                .CreateLogger<ContentBlocksBunchStage>()
+                .LogError(
+                    exception,
+                    "Failed to parse content blocks in packet {PacketId} on channel {ChannelIndex} at payload position {PayloadPosition} of {PayloadLength} bits.",
+                    context.Header.PacketId,
+                    context.Header.ChIndex,
+                    context.Payload.Position,
+                    context.Payload.Length);
             context.Stats.MalformedPayloadCount++;
             context.Stats.MalformedPayloadExceptionCount++;
             return BunchStageResult.Stop;
