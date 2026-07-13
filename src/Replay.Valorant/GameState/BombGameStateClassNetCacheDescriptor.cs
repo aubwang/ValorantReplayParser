@@ -3,8 +3,7 @@ using Replay.Valorant.Descriptors;
 
 namespace Replay.Valorant.GameState;
 
-internal sealed class
-    BombGameStateClassNetCacheDescriptor : ClassNetCacheDescriptor<BombGameStateClassNetCacheDescriptor>
+public sealed class BombGameStateClassNetCacheDescriptor : ClassNetCacheDescriptor<BombGameStateClassNetCacheDescriptor>
 {
     public override string Path => "/Game/GameModes/Bomb/BombGameState.BombGameState_C_ClassNetCache";
 

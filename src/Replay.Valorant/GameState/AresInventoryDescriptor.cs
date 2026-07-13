@@ -4,7 +4,7 @@ using Replay.Valorant.Descriptors;
 
 namespace Replay.Valorant.GameState;
 
-internal sealed class AresInventoryDescriptor : ExportGroupDescriptor<AresInventoryDescriptor>
+public sealed class AresInventoryDescriptor : ExportGroupDescriptor<AresInventoryDescriptor>
 {
     public override string Path => "/Script/ShooterGame.AresInventory";
     public override ExportCategory Categories => ExportCategory.Inventory;

@@ -3,7 +3,7 @@ using Replay.Unreal.Parsing;
 
 namespace Replay.Valorant.Descriptors;
 
-internal sealed class SmokeAbilityDescriptor : ExportGroupDescriptor<SmokeAbilityDescriptor>
+public sealed class SmokeAbilityDescriptor : ExportGroupDescriptor<SmokeAbilityDescriptor>
 {
     public override string Path => "/Game/Characters/Phoenix/S0/Ability_E/Phoenix_E_Smoke.Phoenix_E_Smoke_C";
     public override ExportCategory Categories => ExportCategory.Ability | ExportCategory.Effects;

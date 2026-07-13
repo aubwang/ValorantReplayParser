@@ -4,7 +4,7 @@ using Replay.Valorant.Descriptors;
 
 namespace Replay.Valorant.GameState;
 
-internal sealed class EquippableStateMachineComponentDescriptor
+public sealed class EquippableStateMachineComponentDescriptor
     : ExportGroupDescriptor<EquippableStateMachineComponentDescriptor>
 {
     public override string Path => "/Script/ShooterGame.EquippableStateMachineComponent";

@@ -3,7 +3,7 @@ using Replay.Unreal.Parsing;
 
 namespace Replay.Valorant.Descriptors.Agents.Gumshoe;
 
-internal sealed class SecondTripWireGameObjectDescriptor : ExportGroupDescriptor<SecondTripWireGameObjectDescriptor>
+public sealed class SecondTripWireGameObjectDescriptor : ExportGroupDescriptor<SecondTripWireGameObjectDescriptor>
 {
     public override string Path => "/Game/Characters/Gumshoe/S0/Ability_E/GameObject_Gumshoe_E_TripWire_SecondWire.GameObject_Gumshoe_E_TripWire_SecondWire_C";
     public override ExportCategory Categories => ExportCategory.Ability;

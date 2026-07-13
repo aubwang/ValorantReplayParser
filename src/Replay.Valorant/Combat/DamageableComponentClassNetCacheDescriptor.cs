@@ -2,7 +2,7 @@ using Replay.Models.Descriptors;
 
 namespace Replay.Valorant.Combat;
 
-internal sealed class DamageableComponentClassNetCacheDescriptor
+public sealed class DamageableComponentClassNetCacheDescriptor
     : ClassNetCacheDescriptor<DamageableComponentClassNetCacheDescriptor>
 {
     public override string Path => "/Script/ShooterGame.DamageableComponent_ClassNetCache";

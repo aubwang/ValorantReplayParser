@@ -4,7 +4,7 @@ using Replay.Unreal.Parsing;
 
 namespace Replay.Valorant.Descriptors.Agents.Gumshoe;
 
-internal sealed class CageTrapAbilityDescriptor : ExportGroupDescriptor<CageTrapAbilityDescriptor>
+public sealed class CageTrapAbilityDescriptor : ExportGroupDescriptor<CageTrapAbilityDescriptor>
 {
     public override string Path => "/Game/Characters/Gumshoe/S0/Ability_4/Ability_Gumshoe_4_CageTrap.Ability_Gumshoe_4_CageTrap_C";
     public override ExportCategory Categories => ExportCategory.Ability;

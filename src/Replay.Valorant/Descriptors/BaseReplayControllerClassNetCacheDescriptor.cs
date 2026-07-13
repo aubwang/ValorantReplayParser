@@ -3,7 +3,7 @@ using Replay.Valorant.Movement;
 
 namespace Replay.Valorant.Descriptors;
 
-internal sealed class BaseReplayControllerClassNetCacheDescriptor : ClassNetCacheDescriptor<BaseReplayControllerClassNetCacheDescriptor>
+public sealed class BaseReplayControllerClassNetCacheDescriptor : ClassNetCacheDescriptor<BaseReplayControllerClassNetCacheDescriptor>
 {
     public override string Path => "/Game/Characters/_Core/BaseReplayController.BaseReplayController_C_ClassNetCache";
 

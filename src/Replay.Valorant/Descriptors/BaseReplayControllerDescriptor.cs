@@ -4,7 +4,7 @@ using Replay.Unreal.Parsing;
 
 namespace Replay.Valorant.Descriptors;
 
-internal sealed class BaseReplayControllerDescriptor : ExportGroupDescriptor<BaseReplayControllerDescriptor>
+public sealed class BaseReplayControllerDescriptor : ExportGroupDescriptor<BaseReplayControllerDescriptor>
 {
     public override string Path => "/Game/Characters/_Core/BaseReplayController.BaseReplayController_C";
     public override ExportCategory Categories => ExportCategory.Movement;

@@ -3,7 +3,7 @@ using Replay.Unreal.Parsing;
 
 namespace Replay.Valorant.Descriptors;
 
-internal sealed class BaseReplayPlayerState : ExportGroupDescriptor<BaseReplayPlayerState>
+public sealed class BaseReplayPlayerState : ExportGroupDescriptor<BaseReplayPlayerState>
 {
     public override string Path => "/Game/GameModes/Common/BaseReplayPlayerState.BaseReplayPlayerState_C";
     public override ExportCategory Categories => ExportCategory.Movement;

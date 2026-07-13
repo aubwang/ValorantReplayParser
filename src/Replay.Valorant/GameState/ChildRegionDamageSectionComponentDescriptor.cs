@@ -3,7 +3,7 @@ using Replay.Unreal.Parsing;
 
 namespace Replay.Valorant.GameState;
 
-internal sealed class ChildRegionDamageSectionComponentDescriptor
+public sealed class ChildRegionDamageSectionComponentDescriptor
     : ExportGroupDescriptor<ChildRegionDamageSectionComponentDescriptor>
 {
     public override string Path => "/Script/ShooterGame.ChildRegionDamageSectionComponent";

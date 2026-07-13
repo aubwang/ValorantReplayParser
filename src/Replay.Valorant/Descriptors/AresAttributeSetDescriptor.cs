@@ -3,7 +3,7 @@ using Replay.Unreal.Parsing;
 
 namespace Replay.Valorant.Descriptors;
 
-internal sealed class AresAttributeSetDescriptor : ExportGroupDescriptor<AresAttributeSetDescriptor>
+public sealed class AresAttributeSetDescriptor : ExportGroupDescriptor<AresAttributeSetDescriptor>
 {
     public override string Path => "/Script/ShooterGame.AresAttributeSet";
     public override ExportCategory Categories => ExportCategory.Ability;

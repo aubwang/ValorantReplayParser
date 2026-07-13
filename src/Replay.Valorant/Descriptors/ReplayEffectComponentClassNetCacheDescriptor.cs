@@ -2,7 +2,7 @@ using Replay.Models.Descriptors;
 
 namespace Replay.Valorant.Descriptors;
 
-internal sealed class ReplayEffectComponentClassNetCacheDescriptor
+public sealed class ReplayEffectComponentClassNetCacheDescriptor
     : ClassNetCacheDescriptor<ReplayEffectComponentClassNetCacheDescriptor>
 {
     public override string Path => "/Script/ShooterGame.ReplayEffectComponent_ClassNetCache";

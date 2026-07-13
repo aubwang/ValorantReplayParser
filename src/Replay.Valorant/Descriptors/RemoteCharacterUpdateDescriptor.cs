@@ -3,7 +3,7 @@ using Replay.Unreal.Parsing;
 
 namespace Replay.Valorant.Descriptors;
 
-internal sealed class RemoteCharacterUpdateDescriptor : ExportGroupDescriptor<RemoteCharacterUpdateDescriptor>
+public sealed class RemoteCharacterUpdateDescriptor : ExportGroupDescriptor<RemoteCharacterUpdateDescriptor>
 {
     public override string Path => "/Script/ShooterGame.RemoteCharacterUpdate";
     public override ExportCategory Categories => ExportCategory.Movement;

@@ -2,7 +2,7 @@ using Replay.Models.Descriptors;
 
 namespace Replay.Valorant.Descriptors;
 
-internal sealed class AresAbilitySystemComponentClassNetCacheDescriptor : ClassNetCacheDescriptor<AresAbilitySystemComponentClassNetCacheDescriptor>
+public sealed class AresAbilitySystemComponentClassNetCacheDescriptor : ClassNetCacheDescriptor<AresAbilitySystemComponentClassNetCacheDescriptor>
 {
     public override string Path => "/Script/ShooterGame.AresAbilitySystemComponent_ClassNetCache";
 

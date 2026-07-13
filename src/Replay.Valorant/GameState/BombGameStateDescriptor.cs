@@ -4,7 +4,7 @@ using Replay.Valorant.Descriptors;
 
 namespace Replay.Valorant.GameState;
 
-internal sealed class BombGameStateDescriptor : ExportGroupDescriptor<BombGameStateDescriptor>
+public sealed class BombGameStateDescriptor : ExportGroupDescriptor<BombGameStateDescriptor>
 {
     public override string Path => "/Game/GameModes/Bomb/BombGameState.BombGameState_C";
     public override ExportCategory Categories => ExportCategory.GameState;

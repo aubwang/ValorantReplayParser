@@ -5,7 +5,7 @@ using Replay.Valorant.Descriptors;
 
 namespace Replay.Valorant.GameState;
 
-internal sealed class BombCombatReportComponentDescriptor : ExportGroupDescriptor<BombCombatReportComponentDescriptor>
+public sealed class BombCombatReportComponentDescriptor : ExportGroupDescriptor<BombCombatReportComponentDescriptor>
 {
     public override string Path => "/Game/GameModes/Bomb/Bomb_CombatReportComponent.Bomb_CombatReportComponent_C";
     public override ExportCategory Categories => ExportCategory.GameState | ExportCategory.Gunplay;
