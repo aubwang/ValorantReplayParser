@@ -8,6 +8,7 @@ public static class PrimitiveDecoders
 {
     public static readonly IFieldDecoder Int32 = new Int32Decoder();
     public static readonly IFieldDecoder UInt32 = new UInt32Decoder();
+    public static readonly IFieldDecoder UInt64 = new UInt64Decoder();
     public static readonly IFieldDecoder Float = new FloatDecoder();
     public static readonly IFieldDecoder Double = new DoubleDecoder();
     public static readonly IFieldDecoder Bool = new BoolDecoder();
@@ -26,12 +27,13 @@ public static class PrimitiveDecoders
     public static readonly IFieldDecoder VectorNetQuantizeNormal = new FixedNormalVectorDecoder();
     public static readonly IFieldDecoder RotatorShort = VectorDecoders.RotationShort;
     public static readonly IFieldDecoder Transform = VectorDecoders.Transform;
+    public static readonly IFieldDecoder EnumRemainingBits = new EnumRemainingBitsDecoder();
+    public static readonly IFieldDecoder GameplayTag = new GameplayTagDecoder();
     public static readonly IFieldDecoder RepMovement = new ReplicatedMovementDecoder();
     public static readonly IFieldDecoder Skip = new SkipDecoder();
 
-    public static IFieldDecoder ByteArray(int maxBytes) => new ByteArrayDecoder(maxBytes);
-
     public static IFieldDecoder SerializedInt(int maxValue) => new SerializedIntDecoder(maxValue);
+    public static IFieldDecoder ByteArray(int maxBytes) => new ByteArrayDecoder(maxBytes);
 
     private sealed class FloatVectorDecoder : IFieldDecoder
     {
@@ -74,6 +76,12 @@ public static class PrimitiveDecoders
     {
         public DecodedFieldValue Decode(ref FieldDecodeContext context, FBitArchive archive) =>
             DecodedFieldValue.FromUInt32(archive.ReadUInt32());
+    }
+
+    private sealed class UInt64Decoder : IFieldDecoder
+    {
+        public DecodedFieldValue Decode(ref FieldDecodeContext context, FBitArchive archive) =>
+            DecodedFieldValue.FromUInt64(archive.ReadUInt64());
     }
 
     private sealed class FloatDecoder : IFieldDecoder
@@ -140,6 +148,44 @@ public static class PrimitiveDecoders
     {
         public DecodedFieldValue Decode(ref FieldDecodeContext context, FBitArchive archive) =>
             DecodedFieldValue.FromGuid(archive.ReadGuid());
+    }
+
+    private sealed class EnumRemainingBitsDecoder : IFieldDecoder
+    {
+        public DecodedFieldValue Decode(ref FieldDecodeContext context, FBitArchive archive)
+        {
+            if (archive.BitsRemaining == 0)
+            {
+                return DecodedFieldValue.FromUInt32(0);
+            }
+
+            if (archive.BitsRemaining > 32)
+            {
+                throw new ArchiveReadException(
+                    ArchiveErrorCode.InvalidBitCount,
+                    nameof(EnumRemainingBitsDecoder),
+                    archive.Position,
+                    archive.Length,
+                    archive.BitsRemaining);
+            }
+
+            return DecodedFieldValue.FromUInt32((uint)archive.ReadBitsToUInt64((int)archive.BitsRemaining));
+        }
+    }
+
+    private sealed class GameplayTagDecoder : IFieldDecoder
+    {
+        public DecodedFieldValue Decode(ref FieldDecodeContext context, FBitArchive archive)
+        {
+            var tagIndex = archive.ReadIntPacked();
+            string? tagName = null;
+            if (context.NetGuidCache?.TryGetGameplayTagName(tagIndex, out var resolvedTagName) == true)
+            {
+                tagName = resolvedTagName;
+            }
+
+            return DecodedFieldValue.FromGameplayTag(new FGameplayTag(tagIndex, tagName));
+        }
     }
 
     private sealed class ReplicatedMovementDecoder : IFieldDecoder

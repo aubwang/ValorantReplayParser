@@ -395,7 +395,6 @@ public class FieldPayloadParserTests
 
         public override string Path => _path;
 
-        public int Field { get; set; }
         public int KnownField { get; set; }
         public int IntField { get; set; }
         public float FloatField { get; set; }

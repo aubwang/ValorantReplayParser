@@ -37,7 +37,7 @@ internal sealed class DescriptorCatalogIndex
         TryGetByLookup(_exportDescriptorsByPath, path, ReplayPath.LookupKeys, out descriptor!);
 
     public bool TryGetClassNetCacheDescriptor(string path, out ClassNetCacheDescriptor descriptor) =>
-        TryGetByLookup(_cacheDescriptorsByPath, path, ReplayPath.LookupKeys, out descriptor!);
+        TryGetByLookup(_cacheDescriptorsByPath, path, ReplayPath.ClassNetCacheLookupKeys, out descriptor!);
 
     public ExportGroupKind GetExportGroupKind(string path) =>
         TryGetExportDescriptor(path, out var descriptor)
@@ -74,7 +74,7 @@ internal sealed class DescriptorCatalogIndex
 
     private void IndexClassNetCacheDescriptor(ClassNetCacheDescriptor descriptor)
     {
-        foreach (var key in ReplayPath.LookupKeys(descriptor.Path))
+        foreach (var key in ReplayPath.ClassNetCacheLookupKeys(descriptor.Path))
         {
             _cacheDescriptorsByPath[key] = descriptor;
         }

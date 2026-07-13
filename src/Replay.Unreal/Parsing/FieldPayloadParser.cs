@@ -48,11 +48,12 @@ public class FieldPayloadParser
 
             if (ParseProperty(payload, boundGroup, payloadObject, ref context, ref decodedFieldCount, diagnosticFields))
             {
-                return new DecodedPayloadResult(payloadObject, decodedFieldCount, diagnosticFields ?? []);
+                return CreateDecodedPayloadResult(payloadObject, decodedFieldCount, diagnosticFields ?? [],
+                    ref context);
             }
         }
 
-        return new DecodedPayloadResult(payloadObject, decodedFieldCount, diagnosticFields ?? []);
+        return CreateDecodedPayloadResult(payloadObject, decodedFieldCount, diagnosticFields ?? [], ref context);
     }
 
     public IReadOnlyList<DecodedRpcInvocation> ParseClassNetCachePayload(
@@ -127,7 +128,7 @@ public class FieldPayloadParser
                     rpcPayload,
                     rpcFunction.FunctionGroup,
                     ref context,
-                    readPropertyChecksum: rpcFunction.FunctionGroup.Grammar == FieldStreamGrammar.RepLayoutProperties);
+                    readPropertyChecksum: true);
             }
             else
             {
@@ -246,18 +247,20 @@ public class FieldPayloadParser
         return default;
     }
 
+    private static DecodedPayloadResult CreateDecodedPayloadResult(
+        object payloadObject,
+        int decodedFieldCount,
+        IReadOnlyList<DecodedReplayField> diagnosticFields,
+        ref FieldDecodeContext context)
+    {
+        if (payloadObject is IDecodedPayloadEventEmitter eventEmitter)
+        {
+            eventEmitter.EmitDecodedEvents(ref context);
+        }
+
+        return new DecodedPayloadResult(payloadObject, decodedFieldCount, diagnosticFields);
+    }
+
     private static ILogger<FieldPayloadParser> GetLogger(FieldDecodeContext context) =>
         context.LoggerFactory?.CreateLogger<FieldPayloadParser>() ?? NullLogger<FieldPayloadParser>.Instance;
 }
-
-public sealed record DecodedRpcInvocation(
-    int Handle,
-    string Name,
-    string FunctionExportPath,
-    ExportCategory Categories,
-    int PayloadBits,
-    int ParsedBits,
-    bool WasDecoded,
-    object? Payload,
-    int DecodedFieldCount,
-    IReadOnlyList<DecodedReplayField> DiagnosticFields);

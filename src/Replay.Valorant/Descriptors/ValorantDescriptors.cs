@@ -1,5 +1,7 @@
 using Replay.Models.Descriptors;
+using Replay.Valorant.Combat;
 using Replay.Valorant.Descriptors.Agents.Aggrobot;
+using Replay.Valorant.Descriptors.Agents;
 using Replay.Valorant.Descriptors.Agents.BountyHunter;
 using Replay.Valorant.Descriptors.Agents.Breach;
 using Replay.Valorant.Descriptors.Agents.Cable;
@@ -70,13 +72,6 @@ public static class ValorantDescriptors
 
         catalog.Add(new AresAbilitySystemComponentDescriptor());
         catalog.Add(new AresAttributeSetDescriptor());
-        catalog.Add(new AbilityRechargeComponentDescriptor());
-        catalog.Add(new AbilityRechargeCooldownComponentDescriptor());
-        catalog.Add(new ResourceComponentDescriptor());
-        catalog.Add(new AbilityResourceComponentDescriptor());
-        catalog.Add(new EquipmentChargeComponentDescriptor());
-        catalog.Add(new SignatureAbilityResourceComponentDescriptor());
-        catalog.Add(new AbilityCooldownComponentDescriptor());
         catalog.Add(new AmmoComponentDescriptor());
         catalog.Add(new AresInventoryDescriptor());
         catalog.Add(new AttachedDamageSectionComponentDescriptor());
@@ -86,10 +81,6 @@ public static class ValorantDescriptors
         catalog.Add(new ChildDamageSectionComponentDescriptor());
         catalog.Add(new ChildRegionDamageSectionComponentDescriptor());
         catalog.Add(new EquippableStateMachineComponentDescriptor());
-        catalog.Add(new FiringStateComponentDescriptor());
-        catalog.Add(new LightArmorItemDescriptor());
-        catalog.Add(new HeavyArmorItemDescriptor());
-        catalog.Add(new PlasmaArmorItemDescriptor());
         catalog.Add(new RemoteCharacterUpdateDescriptor());
         catalog.Add(new BaseReplayPlayerState());
         catalog.Add(new BaseReplayControllerDescriptor());
@@ -101,7 +92,10 @@ public static class ValorantDescriptors
         catalog.Add(new ChildDamageSectionClassNetCacheDescriptor());
         catalog.Add(new AttachedDamageSectionClassNetCacheDescriptor());
         catalog.Add(new ArmorDamageSectionClassNetCacheDescriptor());
+        catalog.Add(new ReplayEffectComponentClassNetCacheDescriptor());
         catalog.Add(new DamageableComponentClassNetCacheDescriptor());
+        catalog.Add(AgentClassNetCacheDescriptors.Create(
+            catalog.ExportGroupDescriptors.Where(descriptor => descriptor.Categories.HasFlag(ExportCategory.Agent))));
 
         return catalog;
     }

@@ -10,6 +10,9 @@ public static class DescriptorBuilderDecoderExtensions
     public static FieldDescriptorBuilder UInt32(this FieldDescriptorBuilder builder) =>
         builder.Decode(PrimitiveDecoders.UInt32);
 
+    public static FieldDescriptorBuilder UInt64(this FieldDescriptorBuilder builder) =>
+        builder.Decode(PrimitiveDecoders.UInt64);
+
     public static FieldDescriptorBuilder Float(this FieldDescriptorBuilder builder) =>
         builder.Decode(PrimitiveDecoders.Float);
 
@@ -63,6 +66,15 @@ public static class DescriptorBuilderDecoderExtensions
 
     public static FieldDescriptorBuilder FVectorNetQuantizeNormal(this FieldDescriptorBuilder builder) =>
         builder.Decode(PrimitiveDecoders.VectorNetQuantizeNormal);
+
+    public static FieldDescriptorBuilder FRotatorShort(this FieldDescriptorBuilder builder) =>
+        builder.Decode(PrimitiveDecoders.RotatorShort);
+
+    public static FieldDescriptorBuilder EnumRemainingBits(this FieldDescriptorBuilder builder) =>
+        builder.Decode(PrimitiveDecoders.EnumRemainingBits);
+
+    public static FieldDescriptorBuilder FGameplayTag(this FieldDescriptorBuilder builder) =>
+        builder.Decode(PrimitiveDecoders.GameplayTag);
 
     public static FieldDescriptorBuilder RepLayoutDynamicArray<TElement>(this FieldDescriptorBuilder builder)
         where TElement : ExportGroupDescriptor<TElement>, new() =>

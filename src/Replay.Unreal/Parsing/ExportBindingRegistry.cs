@@ -57,7 +57,27 @@ public sealed class ExportBindingRegistry
 
     public BoundExportGroup? GetBoundGroupByIndex(uint pathNameIndex) => _store.GetBoundGroupByIndex(pathNameIndex);
 
-    public BoundClassNetCache? GetBoundCache(string path) => _store.GetBoundCache(path);
+    public BoundClassNetCache? GetBoundCache(string path)
+    {
+        if (_store.GetBoundCache(path) is { } boundCache)
+        {
+            return boundCache;
+        }
+
+        if (!_catalogIndex.TryGetClassNetCacheDescriptor(path, out var descriptor))
+        {
+            return null;
+        }
+
+        boundCache = _binder.BindClassNetCache(descriptor);
+        if (boundCache is null)
+        {
+            return null;
+        }
+
+        _store.IndexBoundClassNetCache(descriptor.Path, boundCache);
+        return boundCache;
+    }
 
     public BoundClassNetCache? GetBoundCacheByIndex(uint pathNameIndex) => _store.GetBoundCacheByIndex(pathNameIndex);
 

@@ -10,6 +10,7 @@ public readonly record struct DecodedFieldValue
         byte byteValue = 0,
         int int32Value = 0,
         uint uint32Value = 0,
+        ulong uint64Value = 0,
         float floatValue = 0,
         double doubleValue = 0,
         uint netGuidValue = 0,
@@ -17,7 +18,8 @@ public readonly record struct DecodedFieldValue
         string? stringValue = null,
         FVector vectorValue = default,
         FRotator rotatorValue = default,
-        FTransform tranformValue = default,
+        FGameplayTag gameplayTagValue = default,
+        FTransform transformValue = default,
         FRepMovement repMovement = default,
         object? objectValue = null)
     {
@@ -26,16 +28,18 @@ public readonly record struct DecodedFieldValue
         ByteValue = byteValue;
         Int32Value = int32Value;
         UInt32Value = uint32Value;
+        UInt64Value = uint64Value;
         FloatValue = floatValue;
         DoubleValue = doubleValue;
         NetGuidValue = netGuidValue;
+        GuidValue = guidValue;
         StringValue = stringValue;
         VectorValue = vectorValue;
         RotatorValue = rotatorValue;
         RepMovementValue = repMovement;
         ObjectValue = objectValue;
-        TranformValue = tranformValue;
-        GuidValue = guidValue;
+        GameplayTagValue = gameplayTagValue;
+        TransformValue = transformValue;
     }
 
     public static DecodedFieldValue None { get; } = new(DecodedFieldValueKind.None);
@@ -50,12 +54,13 @@ public readonly record struct DecodedFieldValue
 
     public uint UInt32Value { get; }
 
+    public ulong UInt64Value { get; }
+
     public float FloatValue { get; }
 
     public double DoubleValue { get; }
 
     public uint NetGuidValue { get; }
-
     public Guid GuidValue { get; }
 
     public string? StringValue { get; }
@@ -63,9 +68,10 @@ public readonly record struct DecodedFieldValue
     public FVector VectorValue { get; }
 
     public FRotator RotatorValue { get; }
-    public FTransform TranformValue { get; }
 
     public FRepMovement RepMovementValue { get; }
+    public FGameplayTag GameplayTagValue { get; }
+    public FTransform TransformValue { get; }
 
     public object? ObjectValue { get; }
 
@@ -79,44 +85,30 @@ public readonly record struct DecodedFieldValue
 
     public static DecodedFieldValue FromUInt32(uint value) => new(DecodedFieldValueKind.UInt32, uint32Value: value);
 
+    public static DecodedFieldValue FromUInt64(ulong value) => new(DecodedFieldValueKind.UInt64, uint64Value: value);
+
     public static DecodedFieldValue FromFloat(float value) => new(DecodedFieldValueKind.Float, floatValue: value);
 
     public static DecodedFieldValue FromDouble(double value) => new(DecodedFieldValueKind.Double, doubleValue: value);
 
     public static DecodedFieldValue FromNetGuid(uint value) => new(DecodedFieldValueKind.NetGuid, netGuidValue: value);
+
     public static DecodedFieldValue FromGuid(Guid value) => new(DecodedFieldValueKind.Guid, guidValue: value);
 
     public static DecodedFieldValue FromString(string value) => new(DecodedFieldValueKind.String, stringValue: value);
 
     public static DecodedFieldValue FromVector(FVector value) => new(DecodedFieldValueKind.Vector, vectorValue: value);
 
-    public static DecodedFieldValue FromRotator(FRotator value) =>
-        new(DecodedFieldValueKind.Rotator, rotatorValue: value);
+    public static DecodedFieldValue FromRotator(FRotator value) => new(DecodedFieldValueKind.Rotator, rotatorValue: value);
+
+    public static DecodedFieldValue FromGameplayTag(FGameplayTag value) =>
+        new(DecodedFieldValueKind.GameplayTag, gameplayTagValue: value);
 
     public static DecodedFieldValue FromTransform(FTransform value) =>
-        new(DecodedFieldValueKind.Transform, tranformValue: value);
+        new(DecodedFieldValueKind.Transform, transformValue: value);
 
     public static DecodedFieldValue FromRepMovement(FRepMovement value) =>
         new(DecodedFieldValueKind.RepMovement, repMovement: value);
 
     public static DecodedFieldValue FromObject(object value) => new(DecodedFieldValueKind.Object, objectValue: value);
-}
-
-public enum DecodedFieldValueKind
-{
-    None,
-    Bool,
-    Byte,
-    Int32,
-    UInt32,
-    Float,
-    Double,
-    String,
-    NetGuid,
-    Guid,
-    Vector,
-    Rotator,
-    Transform,
-    RepMovement,
-    Object,
 }

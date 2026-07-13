@@ -8,13 +8,13 @@ using Replay.Valorant;
 using Serilog;
 
 Log.Logger = new LoggerConfiguration()
-    .MinimumLevel.Information()
+    .MinimumLevel.Debug()
     .WriteTo.Console(
         outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] {SourceContext}: {Message:lj}{NewLine}{Exception}")
     .CreateLogger();
 
 using var loggerFactory = LoggerFactory.Create(builder => builder
-    .SetMinimumLevel(LogLevel.Information)
+    .SetMinimumLevel(LogLevel.Debug)
     .AddProvider(new SerilogLoggerProvider(Log.Logger)));
 var logger = loggerFactory.CreateLogger("NetGuidCacheReader");
 

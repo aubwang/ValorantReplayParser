@@ -2,6 +2,7 @@ using Replay.Encoding.Archives;
 using Replay.Models.Descriptors;
 using Replay.Models.Events;
 using Replay.Unreal.Parsing;
+using Replay.Valorant.Combat;
 
 namespace Replay.Valorant.Descriptors;
 
@@ -10,6 +11,7 @@ internal static class ValorantPayloadDecoders
     public const int MaxInputEventBytes = 64 * 1024;
 
     public static readonly IRpcDecoder NoParametersRpc = new NoParametersRpcDecoder();
+    public static readonly IFieldDecoder Equippable = new EquippableDecoder();
 
     public static IRpcDecoder RawRpc(string typeName) => new RawRpcDecoder(typeName);
 
@@ -127,14 +129,15 @@ internal static class ValorantPayloadDecoders
             return new DecodedPayloadResult(payload, DecodedFieldCount: 1, diagnostics);
         }
     }
-}
 
-public sealed record ValorantRawPayload(
-    string TypeName,
-    int BitCount,
-    ReadOnlyMemory<byte> Data = default)
-{
-    public override string ToString() => $"{TypeName}({BitCount} bits)";
+    private sealed class EquippableDecoder : IFieldDecoder
+    {
+        public DecodedFieldValue Decode(ref FieldDecodeContext context, FBitArchive archive)
+        {
+            var netGuid = archive.ReadIntPacked();
+            return DecodedFieldValue.FromObject(ValorantEquippableResolver.Resolve(netGuid, context.NetGuidCache));
+        }
+    }
 }
 
 public sealed record ValorantCapturedPayload(

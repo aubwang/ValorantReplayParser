@@ -1,6 +1,7 @@
 using Replay.Encoding.Archives;
 using Replay.Models.Descriptors;
 using Replay.Unreal.Parsing;
+using Replay.Valorant.Combat;
 using Replay.Valorant.Descriptors;
 
 namespace Replay.Valorant.Tests.Descriptors;
@@ -66,20 +67,9 @@ public class ValorantDescriptorsTests
             "/Script/ShooterGame.EquippableStateMachineComponent",
             "/Script/ShooterGame.AmmoComponent",
             "/Script/ShooterGame.AresAttributeSet",
-            "/Script/ShooterGame.AbilityRechargeComponent",
-            "/Script/ShooterGame.AbilityRechargeCooldownComponent",
-            "/Script/ShooterGame.ResourceComponent",
-            "/Script/ShooterGame.AbilityResourceComponent",
-            "/Script/ShooterGame.EquipmentChargeComponent",
-            "/Script/ShooterGame.SignatureAbilityResourceComponent",
-            "/Game/Characters/Components/Comp_Ability_CooldownComponent.Comp_Ability_CooldownComponent_C",
             "/Script/ShooterGame.ChildDamageSectionComponent",
             "/Script/ShooterGame.ChildRegionDamageSectionComponent",
             "/Script/ShooterGame.AttachedDamageSectionComponent",
-            "/Script/ShooterGame.FiringStateComponent",
-            "/Game/Gear/LightArmorItem.LightArmorItem_C",
-            "/Game/Gear/HeavyArmorItem.HeavyArmorItem_C",
-            "/Game/Gear/PlasmaArmor/PlasmaArmorItem.PlasmaArmorItem_C",
             "/Game/Characters/Phoenix/S0/Ability_Q/Production/Projectile_Phoenix_Q_FlameWall_ThroughWall.Projectile_Phoenix_Q_FlameWall_ThroughWall_C",
         ];
 
@@ -129,20 +119,91 @@ public class ValorantDescriptorsTests
                 "MulticastReceivePlayerTemporaryDeathEvent_Point",
                 "MulticastSetPhase",
                 "MulticastResetForRespawn");
+
             AssertFunctions(
-                cacheDescriptors["/Script/ShooterGame.ChildDamageSectionComponent_ClassNetCache"],
-                "MulticastNotifySetLife");
-            AssertFunctions(
-                cacheDescriptors["/Script/ShooterGame.AttachedDamageSectionComponent_ClassNetCache"],
-                "MulticastNotifySetLife");
-            AssertFunctions(
-                cacheDescriptors[
-                    "/Game/Gear/BasicArmorAttachedDamageSection.BasicArmorAttachedDamageSection_C_ClassNetCache"],
-                "MulticastNotifySetLife");
+                cacheDescriptors["/Script/ShooterGame.ReplayEffectComponent_ClassNetCache"],
+                "ReplayPlayContinuousEffectAtLocation",
+                "ReplayPlayOneShotEffectAtLocation",
+                "ReplayStopContinuousEffectAtLocation");
+
             AssertFunctions(
                 cacheDescriptors["/Script/ShooterGame.DamageableComponent_ClassNetCache"],
                 "MulticastNotifyDamage_Base",
                 "MulticastNotifyDamage_Point");
+        });
+    }
+
+    [Test]
+    public void CreateCatalog_DecodesDamageAndKillRpcFields()
+    {
+        var catalog = ValorantDescriptors.CreateCatalog();
+
+        AssertDecodedRpcFields(
+            catalog.ClassNetCacheDescriptors.Single(cache =>
+                    cache.Path == "/Script/ShooterGame.DamageableComponent_ClassNetCache")
+                .FunctionFields.Single(function => function.Name == "MulticastNotifyDamage_Base"),
+            "DamageTaken", "DamagerPlayerState", "KillCreditPlayerState", "KillsForKiller");
+        AssertDecodedRpcFields(
+            catalog.ClassNetCacheDescriptors.Single(cache =>
+                    cache.Path == "/Script/ShooterGame.DamageableComponent_ClassNetCache")
+                .FunctionFields.Single(function => function.Name == "MulticastNotifyDamage_Point"),
+            "DamageTaken", "DamagerPlayerState", "DamagedComponent", "DamagedBone", "KillsForKiller");
+
+        var equippableField = catalog.ClassNetCacheDescriptors.Single(cache =>
+                cache.Path == "/Script/ShooterGame.DamageableComponent_ClassNetCache")
+            .FunctionFields.Single(function => function.Name == "MulticastNotifyDamage_Point")
+            .Fields.Single(field => field.PropertyName == "EquippableUsed");
+        var damagedBoneField = catalog.ClassNetCacheDescriptors.Single(cache =>
+                cache.Path == "/Script/ShooterGame.DamageableComponent_ClassNetCache")
+            .FunctionFields.Single(function => function.Name == "MulticastNotifyDamage_Point")
+            .Fields.Single(field => field.PropertyName == "DamagedBone");
+
+        var agentCachePaths = catalog.ExportGroupDescriptors
+            .Where(descriptor => descriptor.Categories.HasFlag(ExportCategory.Agent))
+            .Select(descriptor => descriptor.Path + "_ClassNetCache")
+            .ToHashSet(StringComparer.Ordinal);
+        var agentCaches = catalog.ClassNetCacheDescriptors
+            .Where(cache => agentCachePaths.Contains(cache.Path))
+            .ToArray();
+        Assert.Multiple(() =>
+        {
+            Assert.That(agentCaches, Has.Length.EqualTo(agentCachePaths.Count));
+            Assert.That(equippableField.TargetProperty!.PropertyType, Is.EqualTo(typeof(ValorantEquippable)));
+            Assert.That(damagedBoneField.TargetProperty!.PropertyType, Is.EqualTo(typeof(string)));
+            foreach (var cache in agentCaches)
+            {
+                AssertDecodedRpcFields(
+                    cache.FunctionFields.Single(function => function.Name == "MulticastNotifyKilledEnemy"),
+                    "KillerCharacter", "KilledCharacter", "MultikillLevel");
+            }
+        });
+    }
+
+    [Test]
+    public void CreateCatalog_DecodesReplayContinuousEffectWithParameterDescriptor()
+    {
+        var function = ValorantDescriptors.CreateCatalog()
+            .ClassNetCacheDescriptors
+            .Single(descriptor => descriptor.Path == "/Script/ShooterGame.ReplayEffectComponent_ClassNetCache")
+            .FunctionFields
+            .Single(function => function.Name == "ReplayPlayContinuousEffectAtLocation");
+
+        var fieldsByName = function.Fields
+            .Where(field => field.PropertyName is not null)
+            .ToDictionary(field => field.PropertyName!, StringComparer.Ordinal);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(function.Decoder, Is.Null);
+            Assert.That(function.Handle, Is.EqualTo(0));
+            Assert.That(function.FunctionExportPath,
+                Is.EqualTo("/Script/ShooterGame.ReplayEffectComponent:ReplayPlayContinuousEffectAtLocation"));
+            Assert.That(fieldsByName.ContainsKey("EffectId"), Is.True);
+            Assert.That(fieldsByName.ContainsKey("FloatValues"), Is.True);
+            Assert.That(fieldsByName.ContainsKey("VectorValues"), Is.True);
+            Assert.That(fieldsByName.ContainsKey("ObjectValues"), Is.True);
+            Assert.That(fieldsByName.ContainsKey("StartMovementTime"), Is.True);
+            Assert.That(fieldsByName.Values.All(field => field.Decoder is not null), Is.True);
         });
     }
 

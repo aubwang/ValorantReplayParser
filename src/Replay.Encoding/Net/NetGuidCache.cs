@@ -115,6 +115,20 @@ public sealed class NetGuidCache
         return false;
     }
 
+    public bool TryGetGameplayTagName(uint tagIndex, out string tagName)
+    {
+        if (_exportGroupsByPath.TryGetValue("NetworkGameplayTagNodeIndex", out var group) &&
+            tagIndex < group.NetFieldExportsLength &&
+            group.NetFieldExports[tagIndex]?.Name is { } name)
+        {
+            tagName = name;
+            return true;
+        }
+
+        tagName = string.Empty;
+        return false;
+    }
+
     public void Clear()
     {
         _exportGroupsByPath.Clear();

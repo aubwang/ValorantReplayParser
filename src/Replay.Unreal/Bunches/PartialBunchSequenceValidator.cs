@@ -2,14 +2,6 @@ using Replay.Models.Net;
 
 namespace Replay.Unreal.Bunches;
 
-internal enum PartialBunchSequenceError
-{
-    None,
-    OverlappingInitial,
-    MissingInitial,
-    MismatchedContinuation,
-}
-
 internal static class PartialBunchSequenceValidator
 {
     public static PartialBunchSequenceError ValidateInitial(bool hasExistingState, bool existingIsComplete) =>

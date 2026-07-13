@@ -35,6 +35,10 @@ internal static class ReplayPath
             {
                 yield return suffixless;
             }
+            else
+            {
+                yield return key + ClassNetCacheSuffix;
+            }
         }
     }
 

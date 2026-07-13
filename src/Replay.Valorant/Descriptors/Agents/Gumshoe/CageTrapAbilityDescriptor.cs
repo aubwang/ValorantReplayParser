@@ -16,7 +16,7 @@ internal sealed class CageTrapAbilityDescriptor : ExportGroupDescriptor<CageTrap
     public uint Owner { get; set; }
     public uint Instigator { get; set; }
     public FVector RelativeScale3D { get; set; }
-    public uint AttachComponent { get; set; }
+    public ValorantRawPayload? AttachComponent { get; set; } // TODO: Implement this component-reference encoding.
     public uint CreatedByCharacter { get; set; }
 
     protected override void Configure()
@@ -24,10 +24,10 @@ internal sealed class CageTrapAbilityDescriptor : ExportGroupDescriptor<CageTrap
         AddProperty(x => x.RemoteRole).Ignore();
         AddProperty(x => x.Role).Ignore();
         AddProperty(x => x.CosmeticRandomSeed).Ignore();
-        AddProperty(x => x.RelativeScale3D).FVector();
+        AddProperty(x => x.RelativeScale3D).FVectorNetQuantize100();
         AddProperty(x => x.Owner).ObjectNetGuid();
         AddProperty(x => x.Instigator).ObjectNetGuid();
-        AddProperty(x => x.AttachComponent).Bool();
+        AddProperty(x => x.AttachComponent).Decode(ValorantPayloadDecoders.RawPayload("AttachComponent"));
         AddProperty(x => x.CreatedByCharacter).ObjectNetGuid();
     }
 }

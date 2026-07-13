@@ -7,6 +7,15 @@ namespace Replay.Unreal.Bunches;
 
 internal sealed class ContentBlockPathResolver
 {
+    private static readonly IReadOnlyDictionary<string, string> KnownSubobjectClassPaths =
+        new Dictionary<string, string>(StringComparer.Ordinal)
+        {
+            ["ReplayEffect"] = "/Script/ShooterGame.ReplayEffectComponent",
+            ["EffectManager"] = "/Script/ShooterGame.EffectManagerComponent",
+            ["LocationalEffectManager"] = "/Script/ShooterGame.LocationalEffectManagerComponent",
+            ["DamageHandlerComponent"] = "/Script/ShooterGame.DamageableComponent",
+        };
+
     private readonly NetGuidCache _netGuidCache;
     private readonly Dictionary<ulong, string> _actorExportGroupPathByChannel = [];
     private readonly Dictionary<ulong, string> _actorClassPathByChannel = [];
@@ -63,7 +72,7 @@ internal sealed class ContentBlockPathResolver
     {
         if (!header.ClassNetGuid.IsValid)
         {
-            return null;
+            return ResolveKnownSubobjectClassPath(header);
         }
 
         var classNetGuid = header.ClassNetGuid.Value;
@@ -74,7 +83,7 @@ internal sealed class ContentBlockPathResolver
 
         if (!_netGuidCache.TryGetPath(classNetGuid, out var path))
         {
-            return null;
+            return ResolveKnownSubobjectClassPath(header);
         }
 
         var resolved = ResolveClassObjectPath(path, archetypePath: null);
@@ -83,7 +92,21 @@ internal sealed class ContentBlockPathResolver
             _subobjectClassPathByClassNetGuid[classNetGuid] = resolved;
         }
 
-        return resolved;
+        return resolved ?? ResolveKnownSubobjectClassPath(header);
+    }
+
+    private string? ResolveKnownSubobjectClassPath(ContentBlockHeader header)
+    {
+        if (!header.ObjectNetGuid.IsValid ||
+            !_netGuidCache.TryGetPath(header.ObjectNetGuid.Value, out var objectPath))
+        {
+            return null;
+        }
+
+        var leafName = GetLeafName(objectPath);
+        return KnownSubobjectClassPaths.TryGetValue(leafName, out var classPath)
+            ? classPath
+            : null;
     }
 
     private string? ResolveCachedActorExportGroupPath(ActorChannelState channel)
@@ -288,6 +311,12 @@ internal sealed class ContentBlockPathResolver
         var separator = packageOrClassPath[separatorIndex];
         return (separator == '.' || separator == ':') &&
                packageOrClassPath.AsSpan(separatorIndex + 1).SequenceEqual(className);
+    }
+
+    private static string GetLeafName(string path)
+    {
+        var leafStart = path.LastIndexOfAny(['/', '.', ':']);
+        return leafStart >= 0 ? path[(leafStart + 1)..] : path;
     }
 
     private static bool TryGetClassNameRange(string? archetypePath, out int start, out int length)

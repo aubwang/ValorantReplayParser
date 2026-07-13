@@ -54,7 +54,10 @@ try
     var context = ValorantReplayReader.CreateDefault(
         loggerFactory,
         actorEventLogger,
-        ParseProfile.Default).Read(archive);
+        new ParseProfile
+        {
+            EnabledCategories = ExportCategory.Gunplay,
+        }).Read(archive);
 
     
     logger.LogInformation("Took: {ReplayName}ms", stopwatch.ElapsedMilliseconds);

@@ -43,7 +43,18 @@ public abstract class ClassNetCacheDescriptor<TDescriptor> : ClassNetCacheDescri
         string functionExportPath,
         ExportCategory categories = ExportCategory.None)
     {
-        var builder = new RpcDescriptorBuilder(name, functionExportPath, categories);
+        var builder = new RpcDescriptorBuilder(name, functionExportPath, null, categories);
+        _functionFields.Add(builder, GetType().Name, "Class-net-cache functions");
+        return builder;
+    }
+
+    protected RpcDescriptorBuilder AddFunctionHandle(
+        uint handle,
+        string name,
+        string functionExportPath,
+        ExportCategory categories = ExportCategory.None)
+    {
+        var builder = new RpcDescriptorBuilder(name, functionExportPath, handle, categories);
         _functionFields.Add(builder, GetType().Name, "Class-net-cache functions");
         return builder;
     }
@@ -54,7 +65,19 @@ public abstract class ClassNetCacheDescriptor<TDescriptor> : ClassNetCacheDescri
         ExportCategory categories = ExportCategory.None)
         where TParameters : ExportGroupDescriptor, new()
     {
-        var builder = new RpcDescriptorBuilder(name, functionExportPath, categories, new TParameters());
+        var builder = new RpcDescriptorBuilder(name, functionExportPath, null, categories, new TParameters());
+        _functionFields.Add(builder, GetType().Name, "Class-net-cache functions");
+        return builder;
+    }
+
+    protected RpcDescriptorBuilder AddFunctionHandle<TParameters>(
+        uint handle,
+        string name,
+        string functionExportPath,
+        ExportCategory categories = ExportCategory.None)
+        where TParameters : ExportGroupDescriptor, new()
+    {
+        var builder = new RpcDescriptorBuilder(name, functionExportPath, handle, categories, new TParameters());
         _functionFields.Add(builder, GetType().Name, "Class-net-cache functions");
         return builder;
     }

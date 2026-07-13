@@ -5,23 +5,6 @@ using Replay.Unreal.Bunches;
 
 namespace Replay.Unreal.Packets;
 
-public delegate void RawBunchPayloadCallback(ref RawBunchHeader header, FBitArchive payload);
-
-public readonly struct RawPacketReadResult
-{
-    public int BunchCount { get; init; }
-    public bool IsMalformed { get; init; }
-    public int PartialErrorCount { get; init; }
-}
-
-internal struct PartialBunchState
-{
-    public int ChSequence { get; set; }
-    public bool Reliable { get; init; }
-    public int CumulativePayloadBitCount { get; set; }
-    public bool IsComplete { get; set; }
-}
-
 public sealed class RawPacketReader
 {
     private readonly Dictionary<uint, PartialBunchState> _partialBunches = [];

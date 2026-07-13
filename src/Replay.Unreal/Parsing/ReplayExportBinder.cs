@@ -102,11 +102,12 @@ internal sealed class ReplayExportBinder
 
             var categories = rpcDesc.Categories;
             var decoder = ResolveRpcDecoder(rpcDesc);
-            var functionGroup = _store.GetBoundGroup(rpcDesc.FunctionExportPath);
+            var functionGroup = _store.GetBoundGroup(rpcDesc.FunctionExportPath)
+                                ?? BindInlineParameterDescriptor(rpcDesc);
             var hasFunctionDescriptor = _catalogIndex.TryGetExportDescriptor(rpcDesc.FunctionExportPath, out _);
             var enabled = cacheEnabled
                           && IsFieldSelected(descriptor.Path, rpcDesc.Name, rpcDesc.Name, categories)
-                          && (decoder is not null || hasFunctionDescriptor);
+                          && (decoder is not null || functionGroup is not null || hasFunctionDescriptor);
 
             var function = new BoundRpcFunction
             {
@@ -136,6 +137,121 @@ internal sealed class ReplayExportBinder
         };
     }
 
+    public BoundClassNetCache? BindClassNetCache(ClassNetCacheDescriptor descriptor)
+    {
+        var maxHandle = descriptor.FunctionFields
+            .Where(function => function.Handle.HasValue)
+            .Select(function => function.Handle!.Value)
+            .DefaultIfEmpty()
+            .Max();
+        if (maxHandle == 0 && descriptor.FunctionFields.All(function => function.Handle is null))
+        {
+            return null;
+        }
+
+        var exports = new NetFieldExport?[checked((int)maxHandle + 1)];
+        foreach (var function in descriptor.FunctionFields)
+        {
+            if (function.Handle is not { } handle || handle >= (uint)exports.Length)
+            {
+                continue;
+            }
+
+            exports[checked((int)handle)] = new NetFieldExport
+            {
+                Handle = handle,
+                CompatibleChecksum = 0,
+                Name = function.Name,
+            };
+        }
+
+        return BindClassNetCache(new NetFieldExportGroup
+        {
+            PathName = descriptor.Path,
+            PathNameIndex = 0,
+            NetFieldExports = exports,
+        }, descriptor);
+    }
+
+    private BoundExportGroup? BindInlineParameterDescriptor(RpcDescriptor rpcDesc)
+    {
+        var descriptor = rpcDesc.ParameterDescriptor
+                         ?? CreateInlineParameterDescriptor(rpcDesc);
+        if (descriptor is null)
+        {
+            return null;
+        }
+
+        var allFields = new List<FieldDescriptor>();
+        _catalogIndex.CollectFields(descriptor, allFields);
+        var maxHandle = allFields
+            .Where(field => field.Handle.HasValue)
+            .Select(field => field.Handle!.Value)
+            .DefaultIfEmpty()
+            .Max();
+        if (maxHandle == 0 && allFields.All(field => field.Handle is null))
+        {
+            return null;
+        }
+
+        var fields = new FieldBinding[checked((int)maxHandle + 1)];
+        var groupEnabled = IsPathSelected(descriptor.Path) && IsCategorySelected(descriptor.Categories);
+
+        foreach (var fieldDesc in allFields)
+        {
+            if (fieldDesc.Handle is not { } handle || handle >= (uint)fields.Length)
+            {
+                continue;
+            }
+
+            var fieldIndex = checked((int)handle);
+            var exportName = fieldDesc.ExportName;
+            var propertyName = fieldDesc.PropertyName ?? exportName;
+            var categories = fieldDesc.Categories == ExportCategory.None
+                ? descriptor.Categories
+                : fieldDesc.Categories;
+            var decoder = ResolveFieldDecoder(fieldDesc);
+            var enabled = decoder is not null
+                          && groupEnabled
+                          && IsFieldSelected(descriptor.Path, propertyName, exportName, categories);
+
+            fields[fieldIndex] = new FieldBinding
+            {
+                Enabled = enabled,
+                Categories = categories,
+                Decoder = enabled ? decoder : null,
+                Name = propertyName,
+                ExportName = exportName,
+                TargetProperty = fieldDesc.TargetProperty,
+            };
+        }
+
+        return new BoundExportGroup
+        {
+            SourceDescriptor = descriptor,
+            Categories = descriptor.Categories,
+            Grammar = descriptor.Grammar,
+            Enabled = groupEnabled,
+            CaptureDiagnosticFields = _parseProfile.CaptureDiagnosticFields,
+            FieldsByHandle = fields,
+        };
+    }
+
+    private static ExportGroupDescriptor? CreateInlineParameterDescriptor(RpcDescriptor rpcDesc)
+    {
+        if (rpcDesc.Fields.Count == 0)
+        {
+            return null;
+        }
+
+        return new ExportGroupDescriptor(
+            rpcDesc.FunctionExportPath,
+            rpcDesc.Categories,
+            ExportGroupKind.ClassNetCache,
+            FieldStreamGrammar.FunctionParameters,
+            fields: rpcDesc.Fields);
+    }
+
     private static uint? ResolveHandle(FieldDescriptor fieldDesc, NetFieldExportGroup replayGroup)
     {
         if (fieldDesc.Handle.HasValue)
@@ -159,6 +275,11 @@ internal sealed class ReplayExportBinder
 
     private static uint? ResolveFunctionHandle(RpcDescriptor rpcDesc, NetFieldExportGroup replayGroup)
     {
+        if (rpcDesc.Handle.HasValue)
+        {
+            return rpcDesc.Handle.Value;
+        }
+
         for (uint i = 0; i < replayGroup.NetFieldExportsLength; i++)
         {
             if (replayGroup.NetFieldExports[i]?.Name == rpcDesc.Name)

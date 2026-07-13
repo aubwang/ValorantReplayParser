@@ -73,7 +73,7 @@ public class ReplayReaderIntegrationTests
 
     [Test]
     public void ReadRawPackets_13_00_RecordsStats() =>
-        ReadRawPacketsRecordsStats(Replay13_00, expectedPartialErrors: 2, expectedMalformedPayloads: 1);
+        ReadRawPacketsRecordsStats(Replay13_00, expectedPartialErrors: 2, expectedMalformedPayloads: 0);
 
     [Test]
     public void ReadRawPackets_12_11_EmitsTimedParserEvents()

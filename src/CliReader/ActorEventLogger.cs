@@ -4,6 +4,7 @@ using Replay.Models.Descriptors;
 using Replay.Models.Events;
 using Replay.Models.Net;
 using Replay.Models.Unreal;
+using Replay.Valorant.Combat;
 
 namespace CliReader;
 
@@ -59,15 +60,35 @@ internal sealed class ActorEventLogger : IReplayEventSink
                 }
 
                 DecodedFieldCount += exportGroup.DecodedFieldCount;
-                LogExportGroup(exportGroup);
+                //LogExportGroup(exportGroup);
                 break;
 
             case RpcReceived rpc:
                 RpcCount++;
                 DecodedFieldCount += rpc.DecodedFieldCount;
-                LogRpc(rpc);
+                //LogRpc(rpc);
+                break;
+
+            case ValorantShotReceived shot:
+                //LogShot(shot);
                 break;
         }
+    }
+
+    private void LogShot(ValorantShotReceived shot)
+    {
+        _logger.LogInformation(
+            "[{TimeSeconds,8:F3}s] Shot Actor: {ActorNetGuid} Rep Actor: {WaitOnReplicationActor} Firing Player State: {FiringPlayerState}\tRemaining ammo: {AmmoRemaining} AttackVector: {AttackVector} Location: {Location} Rotation: {Rotation} Time: {StartMovementTime} YawSwitch: {YawSwitch}",
+            shot.TimeSeconds,
+            shot.ActorNetGuid,
+            shot.Shot.WaitOnReplicationActor,
+            shot.Shot.FiringPlayerState,
+            shot.Shot.AmmoRemaining,
+            shot.Shot.AttackVectors.FirstOrDefault(),
+            shot.Shot.Location,
+            shot.Shot.Rotation,
+            shot.Shot.StartMovementTime,
+            shot.Shot.YawSwitch);
     }
 
     public void LogSummary()
