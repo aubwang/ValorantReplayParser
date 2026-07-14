@@ -7,7 +7,7 @@ namespace Replay.Valorant.GameState;
 public sealed class AresInventoryDescriptor : ExportGroupDescriptor<AresInventoryDescriptor>
 {
     public override string Path => "/Script/ShooterGame.AresInventory";
-    public override ExportCategory Categories => ExportCategory.Inventory;
+    public override ExportCategory Categories => ExportCategory.Inventory | ExportCategory.Gunplay;
     public override ExportGroupKind Kind => ExportGroupKind.Component;
 
     public bool IsActive { get; set; }
@@ -20,12 +20,12 @@ public sealed class AresInventoryDescriptor : ExportGroupDescriptor<AresInventor
 
     protected override void Configure()
     {
-        AddProperty("bIsActive", x => x.IsActive).Bool();
-        AddProperty(x => x.ItemSlots).Decode(ValorantPayloadDecoders.RawPayload("UItemSlot*[16]"));
-        AddProperty(x => x.NewCurrentEquippable).ObjectNetGuid();
-        AddProperty(x => x.Character).ObjectNetGuid();
-        AddProperty(x => x.NetTimestamp).Float();
-        AddProperty(x => x.RespawnNumber).Int32();
-        AddProperty(x => x.CurrentEquippable).ObjectNetGuid();
+        AddProperty("bIsActive", x => x.IsActive, ExportCategory.Inventory).Bool();
+        AddProperty(x => x.ItemSlots, ExportCategory.Inventory).Decode(ValorantPayloadDecoders.RawPayload("UItemSlot*[16]"));
+        AddProperty(x => x.NewCurrentEquippable, ExportCategory.Inventory | ExportCategory.Gunplay).ObjectNetGuid();
+        AddProperty(x => x.Character, ExportCategory.Inventory | ExportCategory.Gunplay).ObjectNetGuid();
+        AddProperty(x => x.NetTimestamp, ExportCategory.Inventory).Float();
+        AddProperty(x => x.RespawnNumber, ExportCategory.Inventory).Int32();
+        AddProperty(x => x.CurrentEquippable, ExportCategory.Inventory | ExportCategory.Gunplay).ObjectNetGuid();
     }
 }

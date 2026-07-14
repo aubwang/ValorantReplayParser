@@ -20,4 +20,6 @@ public sealed record ValorantShot(
     float? YawSwitch,
     uint? FiringPlayerState,
     uint? FiringState,
-    IReadOnlyList<FVector> AttackVectors);
+    IReadOnlyList<FVector> AttackVectors,
+    uint? EffectEquippable,
+    ValorantEquippable? Equippable);

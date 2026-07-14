@@ -19,13 +19,15 @@ public class ReplayReaderContext
         IReplayEventSink? eventSink = null,
         DescriptorCatalog? descriptorCatalog = null,
         ParseProfile? parseProfile = null,
-        ILoggerFactory? loggerFactory = null)
+        ILoggerFactory? loggerFactory = null,
+        NetGuidCache? netGuidCache = null)
     {
         Archive = archive;
         BunchPayloadStats = new BunchPayloadStats();
         EventSink = eventSink ?? NullReplayEventSink.Instance;
         ParseProfile = parseProfile ?? ParseProfile.Default;
         LoggerFactory = loggerFactory;
+        NetGuidCache = netGuidCache ?? new NetGuidCache();
         ExportBindingRegistry = new ExportBindingRegistry(descriptorCatalog, ParseProfile);
         BunchPayloadPipeline = new BunchPayloadPipeline(this);
     }
@@ -37,7 +39,7 @@ public class ReplayReaderContext
     public ReplayVersion ReplayVersion { get; set; } = new() { Branch = string.Empty };
     public UEVersion UEVersion { get; set; } = new();
     public FBinaryArchive ReplayDataStream { get; set; } = new(ReadOnlyMemory<byte>.Empty);
-    public NetGuidCache NetGuidCache { get; } = new();
+    public NetGuidCache NetGuidCache { get; }
     public RawPacketStats PacketStats { get; } = new();
     internal RawPacketReader RawPacketReader { get; } = new();
     public BunchPayloadStats BunchPayloadStats { get; }

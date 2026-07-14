@@ -85,7 +85,6 @@ public static class ValorantDescriptors
         catalog.Add(new BaseReplayPlayerState());
         catalog.Add(new BaseReplayControllerDescriptor());
         catalog.Add(new TripWireAbilityDescriptor());
-
         catalog.Add(new BaseReplayControllerClassNetCacheDescriptor());
         catalog.Add(new BombGameStateClassNetCacheDescriptor());
         catalog.Add(new AresAbilitySystemComponentClassNetCacheDescriptor());

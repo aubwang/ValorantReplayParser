@@ -11,6 +11,7 @@ internal static class ValorantPayloadDecoders
     public const int MaxInputEventBytes = 64 * 1024;
 
     public static readonly IRpcDecoder NoParametersRpc = new NoParametersRpcDecoder();
+    public static readonly IRpcDecoder SkipPayloadRpc = new SkipPayloadRpcDecoder();
     public static readonly IFieldDecoder Equippable = new EquippableDecoder();
 
     public static IRpcDecoder RawRpc(string typeName) => new RawRpcDecoder(typeName);
@@ -130,6 +131,15 @@ internal static class ValorantPayloadDecoders
         }
     }
 
+    private sealed class SkipPayloadRpcDecoder : IRpcDecoder
+    {
+        public DecodedPayloadResult Decode(ref FieldDecodeContext context, FBitArchive archive)
+        {
+            archive.SkipBits(checked((int)archive.BitsRemaining));
+            return DecodedPayloadResult.Empty;
+        }
+    }
+
     private sealed class EquippableDecoder : IFieldDecoder
     {
         public DecodedFieldValue Decode(ref FieldDecodeContext context, FBitArchive archive)
@@ -139,7 +149,6 @@ internal static class ValorantPayloadDecoders
         }
     }
 }
-
 public sealed record ValorantCapturedPayload(
     string TypeName,
     int BitCount,

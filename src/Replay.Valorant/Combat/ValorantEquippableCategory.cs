@@ -12,4 +12,5 @@ public enum ValorantEquippableCategory
     Rifle,
     SniperRifle,
     MachineGun,
+    Ability,
 }

@@ -42,6 +42,7 @@ public class ValorantShotTests
                 ObjectValue("FiringState.FiringState", 368),
                 ObjectValue("FiringState.FiringPlayerState", 92),
                 ObjectValue("FXC.EffectContext", 146),
+                ObjectValue("FXC.Equippable", 500),
             ],
         };
 
@@ -57,6 +58,7 @@ public class ValorantShotTests
             Assert.That(shot.RandomSeed, Is.EqualTo(-894045900));
             Assert.That(shot.FiringState, Is.EqualTo(368));
             Assert.That(shot.FiringPlayerState, Is.EqualTo(92));
+            Assert.That(shot.EffectEquippable, Is.EqualTo(500));
             Assert.That(shot.AttackVectors, Is.EqualTo(new[] { attackVector1, attackVector2, attackVector10 }));
         });
     }
@@ -96,6 +98,7 @@ public class ValorantShotTests
                 (251u, 368u),
                 (250u, 92u),
                 (274u, 146u),
+                (275u, 500u),
             ]));
             WriteField(writer, 26, field =>
             {
@@ -123,7 +126,7 @@ public class ValorantShotTests
             Assert.That(shotEvents, Has.Length.EqualTo(1));
             Assert.That(result.DecodedFieldCount, Is.EqualTo(9));
             Assert.That(parameters.FloatValues, Has.Length.EqualTo(5));
-            Assert.That(parameters.ObjectValues, Has.Length.EqualTo(3));
+            Assert.That(parameters.ObjectValues, Has.Length.EqualTo(4));
             Assert.That(shotEvent.ActorNetGuid, Is.EqualTo(100));
             Assert.That(shotEvent.ObjectNetGuid, Is.EqualTo(101));
             Assert.That(shotEvent.ChannelIndex, Is.EqualTo(7));
@@ -136,6 +139,7 @@ public class ValorantShotTests
             Assert.That(shotEvent.Shot.AmmoRemaining, Is.EqualTo(11));
             Assert.That(shotEvent.Shot.FiringState, Is.EqualTo(368));
             Assert.That(shotEvent.Shot.FiringPlayerState, Is.EqualTo(92));
+            Assert.That(shotEvent.Shot.EffectEquippable, Is.EqualTo(500));
             Assert.That(archive.AtEnd, Is.True);
         });
     }
@@ -302,8 +306,9 @@ public class ValorantShotTests
             [254] = "FiringState.TracerOption",
             [273] = "FXC.Duration",
             [274] = "FXC.EffectContext",
+            [275] = "FXC.Equippable",
         };
-        var exports = new NetFieldExport?[275];
+        var exports = new NetFieldExport?[276];
         foreach (var (tagIndex, tagName) in tags)
         {
             exports[tagIndex] = new NetFieldExport

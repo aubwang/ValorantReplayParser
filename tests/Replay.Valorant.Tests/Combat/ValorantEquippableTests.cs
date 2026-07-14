@@ -26,11 +26,11 @@ public class ValorantEquippableTests
     [TestCase("/Game/Equippables/Guns/Rifles/Carbine/AssaultRifle_ACR.AssaultRifle_ACR_C", "Phantom", ValorantEquippableCategory.Rifle)]
     [TestCase("/Game/Equippables/Guns/Rifles/AK/AssaultRifle_AK.AssaultRifle_AK_C", "Vandal", ValorantEquippableCategory.Rifle)]
     [TestCase("/Game/Equippables/Guns/SniperRifles/Leversniper/LeverSniperRifle.LeverSniperRifle_C", "Marshal", ValorantEquippableCategory.SniperRifle)]
-    [TestCase("/Game/Equippables/Guns/SniperRifles/Boltsniper/BoltSniper.BoltSniper_C", "Outlaw", ValorantEquippableCategory.SniperRifle)]
-    [TestCase("/Game/Equippables/Guns/SniperRifles/Doublesniper/DS_Gun.DS_Gun_C", "Operator", ValorantEquippableCategory.SniperRifle)]
+    [TestCase("/Game/Equippables/Guns/SniperRifles/Boltsniper/BoltSniper.BoltSniper_C", "Operator", ValorantEquippableCategory.SniperRifle)]
+    [TestCase("/Game/Equippables/Guns/SniperRifles/Doublesniper/DS_Gun.DS_Gun_C", "Outlaw", ValorantEquippableCategory.SniperRifle)]
     [TestCase("/Game/Equippables/Guns/HvyMachineGuns/LMG/LightMachineGun.LightMachineGun_C", "Ares", ValorantEquippableCategory.MachineGun)]
     [TestCase("/Game/Equippables/Guns/HvyMachineGuns/HMG/HeavyMachineGun.HeavyMachineGun_C", "Odin", ValorantEquippableCategory.MachineGun)]
-    [TestCase("/Game/Characters/Deadeye/S0/Ability_Q/Gun/Gun_Deadeye_Q_Pistol.Gun_Deadeye_Q_Pistol_C", "Headhunter", ValorantEquippableCategory.Sidearm)]
+    [TestCase("/Game/Characters/Deadeye/S0/Ability_Q/Gun/Gun_Deadeye_Q_Pistol.Gun_Deadeye_Q_Pistol_C", "Headhunter", ValorantEquippableCategory.Ability )]
     public void Resolve_KnownEquippablePath_ReturnsCanonicalWeapon(
         string classPath,
         string expectedName,
@@ -65,6 +65,22 @@ public class ValorantEquippableTests
             Assert.That(equippable.Name, Is.EqualTo("Vandal"));
             Assert.That(equippable.Category, Is.EqualTo(ValorantEquippableCategory.Rifle));
             Assert.That(equippable.ClassPath, Is.EqualTo(classPath));
+        });
+    }
+
+    [Test]
+    public void TryResolveClassNetCachePath_KnownGun_ReturnsWeapon()
+    {
+        var resolved = ValorantEquippableResolver.TryResolveClassNetCachePath(
+            "/Game/Equippables/Guns/Rifles/AK/AssaultRifle_AK.AssaultRifle_AK_C_ClassNetCache",
+            17,
+            out var equippable);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(resolved, Is.True);
+            Assert.That(equippable.NetGuid, Is.EqualTo(17));
+            Assert.That(equippable.Name, Is.EqualTo("Vandal"));
         });
     }
 

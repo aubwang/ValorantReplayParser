@@ -60,17 +60,17 @@ internal sealed class ActorEventLogger : IReplayEventSink
                 }
 
                 DecodedFieldCount += exportGroup.DecodedFieldCount;
-                //LogExportGroup(exportGroup);
+                LogExportGroup(exportGroup);
                 break;
 
             case RpcReceived rpc:
                 RpcCount++;
                 DecodedFieldCount += rpc.DecodedFieldCount;
-                //LogRpc(rpc);
+                LogRpc(rpc);
                 break;
 
             case ValorantShotReceived shot:
-                //LogShot(shot);
+                LogShot(shot);
                 break;
         }
     }
@@ -78,9 +78,10 @@ internal sealed class ActorEventLogger : IReplayEventSink
     private void LogShot(ValorantShotReceived shot)
     {
         _logger.LogInformation(
-            "[{TimeSeconds,8:F3}s] Shot Actor: {ActorNetGuid} Rep Actor: {WaitOnReplicationActor} Firing Player State: {FiringPlayerState}\tRemaining ammo: {AmmoRemaining} AttackVector: {AttackVector} Location: {Location} Rotation: {Rotation} Time: {StartMovementTime} YawSwitch: {YawSwitch}",
+            "[{TimeSeconds,8:F3}s] Shot Actor: {ActorNetGuid} Weapon: {Weapon} Rep Actor: {WaitOnReplicationActor} Firing Player State: {FiringPlayerState}\tRemaining ammo: {AmmoRemaining} AttackVector: {AttackVector} Location: {Location} Rotation: {Rotation} Time: {StartMovementTime} YawSwitch: {YawSwitch}",
             shot.TimeSeconds,
             shot.ActorNetGuid,
+            shot.Shot.Equippable?.Name ?? "<unknown>",
             shot.Shot.WaitOnReplicationActor,
             shot.Shot.FiringPlayerState,
             shot.Shot.AmmoRemaining,

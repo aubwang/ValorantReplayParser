@@ -75,7 +75,9 @@ public sealed class ReplayPlayContinuousEffectAtLocationParameters
             GetFloat("FiringState.YawSwitch"),
             GetObject("FiringState.FiringPlayerState"),
             GetObject("FiringState.FiringState"),
-            GetAttackVectors());
+            GetAttackVectors(),
+            GetObject("FXC.Equippable"),
+            Equippable: null);
     }
 
     private float? GetFloat(string tagName)
