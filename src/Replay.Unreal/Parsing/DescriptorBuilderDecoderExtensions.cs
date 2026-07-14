@@ -42,16 +42,16 @@ public static class DescriptorBuilderDecoderExtensions
 
     public static FieldDescriptorBuilder SerializedInt(this FieldDescriptorBuilder builder, int maxValue) =>
         builder.Decode(PrimitiveDecoders.SerializedInt(maxValue));
-    
+
     public static FieldDescriptorBuilder Guid(this FieldDescriptorBuilder builder) =>
         builder.Decode(PrimitiveDecoders.Guid);
 
     public static FieldDescriptorBuilder FVector(this FieldDescriptorBuilder builder) =>
         builder.Decode(PrimitiveDecoders.Vector);
-    
+
     public static FieldDescriptorBuilder Transform(this FieldDescriptorBuilder builder) =>
         builder.Decode(PrimitiveDecoders.Transform);
-    
+
     public static FieldDescriptorBuilder ReplicatedMovement(this FieldDescriptorBuilder builder) =>
         builder.Decode(PrimitiveDecoders.RepMovement);
 

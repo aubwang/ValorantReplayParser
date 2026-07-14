@@ -56,7 +56,7 @@ try
         actorEventLogger,
         new ParseProfile
         {
-            EnabledCategories = ExportCategory.Gunplay,
+            EnabledCategories = ExportCategory.None,
         }).Read(archive);
 
     

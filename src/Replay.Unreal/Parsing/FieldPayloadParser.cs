@@ -81,6 +81,12 @@ public class FieldPayloadParser
         while (!payload.AtEnd)
         {
             var handle = (int)payload.ReadSerializedInt(boundCache.FunctionsByHandle.Length);
+            if (payload.BitsRemaining < 8)
+            {
+                payload.SkipRemaining();
+                return invocations;
+            }
+
             var payloadBits = payload.ReadIntPacked();
             if (payloadBits > int.MaxValue || payload.BitsRemaining < payloadBits)
             {

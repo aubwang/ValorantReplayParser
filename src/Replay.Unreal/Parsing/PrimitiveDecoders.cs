@@ -143,7 +143,7 @@ public static class PrimitiveDecoders
         public DecodedFieldValue Decode(ref FieldDecodeContext context, FBitArchive archive) =>
             DecodedFieldValue.FromUInt32(archive.ReadSerializedInt(_maxValue));
     }
-    
+
     private sealed class GuidDecoder : IFieldDecoder
     {
         public DecodedFieldValue Decode(ref FieldDecodeContext context, FBitArchive archive) =>

@@ -8,6 +8,7 @@ using Replay.Models.Replay;
 using Replay.Unreal.Chunks;
 using Replay.Unreal.Info;
 using Replay.Unreal.Readers;
+using Replay.Valorant.Combat;
 using Replay.Valorant.Descriptors;
 
 namespace Replay.Valorant;
@@ -58,7 +59,15 @@ public sealed class ValorantReplayReader
 
     public ReplayReaderContext Read(FBinaryArchive archive)
     {
-        var context = new ReplayReaderContext(archive, _eventSink, _descriptorCatalog, _parseProfile, _loggerFactory);
+        var netGuidCache = new Replay.Encoding.Net.NetGuidCache();
+        var eventSink = new ValorantShotEventEnricher(_eventSink, netGuidCache);
+        var context = new ReplayReaderContext(
+            archive,
+            eventSink,
+            _descriptorCatalog,
+            _parseProfile,
+            _loggerFactory,
+            netGuidCache);
         var replayInfoResult = new ReplayInfoReader(archive).Read();
 
         context.ReplayInfo = replayInfoResult.Info;

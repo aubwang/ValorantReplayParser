@@ -29,7 +29,7 @@ public static class VectorDecoders
             return DecodedFieldValue.FromVector(vector);
         }
     }
-    
+
     private sealed class FTransformDecoder : IFieldDecoder
     {
         public DecodedFieldValue Decode(ref FieldDecodeContext context, FBitArchive archive)

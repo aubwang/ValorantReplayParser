@@ -3,6 +3,7 @@ using Replay.Encoding.Archives;
 using Replay.Models.Net;
 using Replay.Unreal.Parsing;
 using Replay.Valorant.Combat;
+using Replay.Valorant.Descriptors;
 
 namespace Replay.Valorant.Tests.Combat;
 
@@ -81,6 +82,23 @@ public class ValorantEquippableTests
             Assert.That(resolved, Is.True);
             Assert.That(equippable.NetGuid, Is.EqualTo(17));
             Assert.That(equippable.Name, Is.EqualTo("Vandal"));
+        });
+    }
+
+    [Test]
+    public void DescriptorCatalog_RegistersAllGunShotRpcsByName()
+    {
+        var gunClassNetCaches = ValorantDescriptors.CreateCatalog().ClassNetCacheDescriptors
+            .Where(descriptor => descriptor.Path.EndsWith("_ClassNetCache", StringComparison.Ordinal) &&
+                                 ValorantEquippableResolver.GunClassPaths
+                                     .Contains(descriptor.Path[..^"_ClassNetCache".Length], StringComparer.Ordinal))
+            .ToArray();
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(gunClassNetCaches, Has.Length.EqualTo(ValorantEquippableResolver.GunClassPaths.Count));
+            Assert.That(gunClassNetCaches.SelectMany(descriptor => descriptor.FunctionFields), Is.All.Matches<Replay.Models.Descriptors.RpcDescriptor>(
+                rpc => rpc.Name == "MulticastPlayContinuousEffectFromClient" && rpc.Handle is null));
         });
     }
 

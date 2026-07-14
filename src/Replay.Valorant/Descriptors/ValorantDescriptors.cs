@@ -1,5 +1,6 @@
 using Replay.Models.Descriptors;
 using Replay.Valorant.Combat;
+using Replay.Valorant.Combat.Guns;
 using Replay.Valorant.Descriptors.Agents.Aggrobot;
 using Replay.Valorant.Descriptors.Agents;
 using Replay.Valorant.Descriptors.Agents.BountyHunter;
@@ -85,6 +86,7 @@ public static class ValorantDescriptors
         catalog.Add(new BaseReplayPlayerState());
         catalog.Add(new BaseReplayControllerDescriptor());
         catalog.Add(new TripWireAbilityDescriptor());
+        catalog.Add(GunClassNetCacheDescriptors.Create());
         catalog.Add(new BaseReplayControllerClassNetCacheDescriptor());
         catalog.Add(new BombGameStateClassNetCacheDescriptor());
         catalog.Add(new AresAbilitySystemComponentClassNetCacheDescriptor());
