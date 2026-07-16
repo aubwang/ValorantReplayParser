@@ -21,6 +21,7 @@
     </ItemGroup>
 
     <ItemGroup>
+      <ProjectReference Include="..\..\src\CliReader\CliReader.csproj" />
       <ProjectReference Include="..\..\src\Replay.Models\Replay.Models.csproj" />
       <ProjectReference Include="..\..\src\Replay.Valorant\Replay.Valorant.csproj" />
     </ItemGroup>
