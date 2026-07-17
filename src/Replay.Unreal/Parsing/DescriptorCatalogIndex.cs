@@ -67,6 +67,7 @@ internal sealed class DescriptorCatalogIndex
 
         if (ReplayPath.GetDefaultObjectName(descriptor.Path) is { } defaultObjectName)
         {
+            _exportDescriptorsByPath[defaultObjectName] = descriptor;
             _exportKindsByDefaultObjectName[defaultObjectName] = descriptor.Kind;
         }
     }

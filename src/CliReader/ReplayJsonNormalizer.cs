@@ -8,7 +8,7 @@ namespace CliReader;
 
 internal sealed class ReplayJsonNormalizer
 {
-    private const int MaxDepth = 8;
+    private const int MaxDepth = 12;
     private const int MaxCollectionItems = 4096;
 
     public void WriteValue(Utf8JsonWriter writer, object? value)

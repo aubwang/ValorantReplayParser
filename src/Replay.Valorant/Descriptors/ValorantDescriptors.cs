@@ -70,6 +70,13 @@ public static class ValorantDescriptors
 
         catalog.Add(new AresAbilitySystemComponentDescriptor());
         catalog.Add(new AresAttributeSetDescriptor());
+        catalog.Add(new AbilityRechargeComponentDescriptor());
+        catalog.Add(new AbilityRechargeCooldownComponentDescriptor());
+        catalog.Add(new ResourceComponentDescriptor());
+        catalog.Add(new AbilityResourceComponentDescriptor());
+        catalog.Add(new EquipmentChargeComponentDescriptor());
+        catalog.Add(new SignatureAbilityResourceComponentDescriptor());
+        catalog.Add(new AbilityCooldownComponentDescriptor());
         catalog.Add(new AmmoComponentDescriptor());
         catalog.Add(new AresInventoryDescriptor());
         catalog.Add(new AttachedDamageSectionComponentDescriptor());
@@ -80,6 +87,9 @@ public static class ValorantDescriptors
         catalog.Add(new ChildRegionDamageSectionComponentDescriptor());
         catalog.Add(new EquippableStateMachineComponentDescriptor());
         catalog.Add(new FiringStateComponentDescriptor());
+        catalog.Add(new LightArmorItemDescriptor());
+        catalog.Add(new HeavyArmorItemDescriptor());
+        catalog.Add(new PlasmaArmorItemDescriptor());
         catalog.Add(new RemoteCharacterUpdateDescriptor());
         catalog.Add(new BaseReplayPlayerState());
         catalog.Add(new BaseReplayControllerDescriptor());
@@ -88,6 +98,10 @@ public static class ValorantDescriptors
         catalog.Add(new BaseReplayControllerClassNetCacheDescriptor());
         catalog.Add(new BombGameStateClassNetCacheDescriptor());
         catalog.Add(new AresAbilitySystemComponentClassNetCacheDescriptor());
+        catalog.Add(new ChildDamageSectionClassNetCacheDescriptor());
+        catalog.Add(new AttachedDamageSectionClassNetCacheDescriptor());
+        catalog.Add(new ArmorDamageSectionClassNetCacheDescriptor());
+        catalog.Add(new DamageableComponentClassNetCacheDescriptor());
 
         return catalog;
     }

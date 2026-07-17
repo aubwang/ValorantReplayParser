@@ -64,10 +64,20 @@ public class ValorantDescriptorsTests
             "/Script/ShooterGame.EquippableStateMachineComponent",
             "/Script/ShooterGame.AmmoComponent",
             "/Script/ShooterGame.AresAttributeSet",
+            "/Script/ShooterGame.AbilityRechargeComponent",
+            "/Script/ShooterGame.AbilityRechargeCooldownComponent",
+            "/Script/ShooterGame.ResourceComponent",
+            "/Script/ShooterGame.AbilityResourceComponent",
+            "/Script/ShooterGame.EquipmentChargeComponent",
+            "/Script/ShooterGame.SignatureAbilityResourceComponent",
+            "/Game/Characters/Components/Comp_Ability_CooldownComponent.Comp_Ability_CooldownComponent_C",
             "/Script/ShooterGame.ChildDamageSectionComponent",
             "/Script/ShooterGame.ChildRegionDamageSectionComponent",
             "/Script/ShooterGame.AttachedDamageSectionComponent",
             "/Script/ShooterGame.FiringStateComponent",
+            "/Game/Gear/LightArmorItem.LightArmorItem_C",
+            "/Game/Gear/HeavyArmorItem.HeavyArmorItem_C",
+            "/Game/Gear/PlasmaArmor/PlasmaArmorItem.PlasmaArmorItem_C",
             "/Game/Characters/Phoenix/S0/Ability_Q/Production/Projectile_Phoenix_Q_FlameWall_ThroughWall.Projectile_Phoenix_Q_FlameWall_ThroughWall_C",
         ];
 
@@ -117,6 +127,20 @@ public class ValorantDescriptorsTests
                 "MulticastReceivePlayerTemporaryDeathEvent_Point",
                 "MulticastSetPhase",
                 "MulticastResetForRespawn");
+            AssertFunctions(
+                cacheDescriptors["/Script/ShooterGame.ChildDamageSectionComponent_ClassNetCache"],
+                "MulticastNotifySetLife");
+            AssertFunctions(
+                cacheDescriptors["/Script/ShooterGame.AttachedDamageSectionComponent_ClassNetCache"],
+                "MulticastNotifySetLife");
+            AssertFunctions(
+                cacheDescriptors[
+                    "/Game/Gear/BasicArmorAttachedDamageSection.BasicArmorAttachedDamageSection_C_ClassNetCache"],
+                "MulticastNotifySetLife");
+            AssertFunctions(
+                cacheDescriptors["/Script/ShooterGame.DamageableComponent_ClassNetCache"],
+                "MulticastNotifyDamage_Base",
+                "MulticastNotifyDamage_Point");
         });
     }
 

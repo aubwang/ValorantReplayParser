@@ -10,11 +10,13 @@ internal sealed class BaseReplayControllerDescriptor : ExportGroupDescriptor<Bas
     public override ExportCategory Categories => ExportCategory.Movement;
     public override ExportGroupKind Kind => ExportGroupKind.PlayerController;
 
+    public uint PlayerState { get; set; }
     public uint RemoteCharacterUpdatesArray { get; set; }
     public FVector SpawnLocation { get; set; }
 
     protected override void Configure()
     {
+        AddProperty(x => x.PlayerState).ObjectNetGuidOrRaw();
         AddProperty(x => x.RemoteCharacterUpdatesArray);
         AddProperty(x => x.SpawnLocation).FVector();
     }

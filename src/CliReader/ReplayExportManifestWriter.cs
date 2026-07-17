@@ -7,7 +7,7 @@ namespace CliReader;
 
 internal sealed class ReplayExportManifestWriter
 {
-    private const int SchemaVersion = 1;
+    private const int SchemaVersion = 3;
 
     public void Write(
         string outputDirectory,
@@ -74,6 +74,8 @@ internal sealed class ReplayExportManifestWriter
         writer.WriteString("parser_version", ParserVersion(parserAssembly));
         WriteStats(writer, context);
         WriteCounts(writer, sink);
+        WriteNetFieldExportGroups(writer, context);
+        WriteFilteredExportGroups(writer, sink);
         WriteLimitations(writer);
         writer.WriteEndObject();
     }
@@ -101,7 +103,65 @@ internal sealed class ReplayExportManifestWriter
         writer.WriteNumber("export_group_received", sink.ExportGroupCount);
         writer.WriteNumber("rpc_received", sink.RpcCount);
         writer.WriteNumber("filtered_export_groups", sink.FilteredExportGroupCount);
+        writer.WriteNumber("undecoded_export_groups", sink.UndecodedExportGroupCount);
+        writer.WriteNumber("empty_decoded_export_groups", sink.EmptyDecodedExportGroupCount);
         writer.WriteEndObject();
+    }
+
+    private static void WriteFilteredExportGroups(
+        Utf8JsonWriter writer,
+        ReplayExportSink sink)
+    {
+        writer.WriteStartArray("filtered_export_group_summary");
+        foreach (var summary in sink.FilteredExportGroups
+                     .OrderByDescending(item => item.Count)
+                     .ThenBy(item => item.Path, StringComparer.Ordinal))
+        {
+            writer.WriteStartObject();
+            writer.WriteString("path", summary.Path);
+            writer.WriteString("kind", ReplayJsonNormalizer.ToSnakeCase(summary.Kind.ToString()));
+            writer.WriteBoolean("was_decoded", summary.WasDecoded);
+            writer.WriteNumber("count", summary.Count);
+            writer.WriteNumber("payload_bits", summary.PayloadBits);
+            writer.WriteNumber("sample_actor_net_guid", summary.ActorNetGuid);
+            writer.WriteNumber("sample_object_net_guid", summary.ObjectNetGuid);
+            writer.WriteNumber("sample_class_net_guid", summary.ClassNetGuid);
+            writer.WriteNumber("sample_outer_net_guid", summary.OuterNetGuid);
+            writer.WriteString("sample_object_path", summary.ObjectPath);
+            writer.WriteString("sample_class_path", summary.ClassPath);
+            writer.WriteString("sample_outer_path", summary.OuterPath);
+            writer.WriteEndObject();
+        }
+
+        writer.WriteEndArray();
+    }
+
+    private static void WriteNetFieldExportGroups(
+        Utf8JsonWriter writer,
+        ReplayReaderContext context)
+    {
+        writer.WriteStartArray("net_field_export_groups");
+        foreach (var group in context.NetGuidCache.ExportGroupsByPath.Values
+                     .OrderBy(item => item.PathName, StringComparer.Ordinal))
+        {
+            writer.WriteStartObject();
+            writer.WriteString("path", group.PathName);
+            writer.WriteNumber("path_name_index", group.PathNameIndex);
+            writer.WriteStartArray("fields");
+            foreach (var field in group.NetFieldExports.Where(item => item is not null))
+            {
+                writer.WriteStartObject();
+                writer.WriteNumber("handle", field!.Handle);
+                writer.WriteString("name", field.Name);
+                writer.WriteNumber("compatible_checksum", field.CompatibleChecksum);
+                writer.WriteEndObject();
+            }
+
+            writer.WriteEndArray();
+            writer.WriteEndObject();
+        }
+
+        writer.WriteEndArray();
     }
 
     private static void WriteLimitations(Utf8JsonWriter writer)

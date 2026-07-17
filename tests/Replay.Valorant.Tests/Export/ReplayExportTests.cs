@@ -7,6 +7,7 @@ using Replay.Models.Net;
 using Replay.Models.Replay;
 using Replay.Models.Unreal;
 using Replay.Unreal.Readers;
+using Replay.Valorant.GameState;
 using Replay.Valorant.Movement;
 
 namespace Replay.Valorant.Tests.Export;
@@ -50,6 +51,9 @@ public class ReplayExportTests
             {
                 Assert.That(sink.EventCount, Is.EqualTo(4));
                 Assert.That(sink.FilteredExportGroupCount, Is.EqualTo(2));
+                Assert.That(sink.UndecodedExportGroupCount, Is.EqualTo(1));
+                Assert.That(sink.EmptyDecodedExportGroupCount, Is.EqualTo(1));
+                Assert.That(sink.FilteredExportGroups.Count, Is.EqualTo(2));
             });
         }
 
@@ -79,6 +83,30 @@ public class ReplayExportTests
         });
 
         Dispose(documents);
+    }
+
+    [Test]
+    public void EventSink_WritesStructuredRoundResultPayload()
+    {
+        using var events = new MemoryStream();
+        using var movement = new MemoryStream();
+        using (var sink = CreateSink(events, movement))
+        {
+            sink.Emit(Export(wasDecoded: true, payload: new RoundResultPayload()));
+        }
+
+        using var document = ParseLines(events).Single();
+        var result = document.RootElement
+            .GetProperty("payload")
+            .GetProperty("RoundResults")[0];
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.GetProperty("RoundNumber").GetInt32(), Is.Zero);
+            Assert.That(result.GetProperty("WinningTeam").GetString(), Is.EqualTo("Blue"));
+            Assert.That(result.GetProperty("WinningTeamRole").GetString(), Is.EqualTo("defender"));
+            Assert.That(result.GetProperty("RoundResult").GetString(), Is.EqualTo("defuse"));
+        });
     }
 
     [Test]
@@ -137,6 +165,7 @@ public class ReplayExportTests
             using var movement = new MemoryStream();
             using var sink = CreateSink(events, movement);
             sink.Emit(Spawned());
+            sink.Emit(Export(wasDecoded: false, payload: null));
 
             new ReplayExportManifestWriter().Write(
                 directory,
@@ -151,13 +180,25 @@ public class ReplayExportTests
             var manifest = document.RootElement;
             Assert.Multiple(() =>
             {
-                Assert.That(manifest.GetProperty("schema_version").GetInt32(), Is.EqualTo(1));
+                Assert.That(manifest.GetProperty("schema_version").GetInt32(), Is.EqualTo(3));
                 Assert.That(manifest.GetProperty("source_sha256").GetString(), Has.Length.EqualTo(64));
                 Assert.That(manifest.GetProperty("replay_build").GetString(), Does.EndWith("release-13.01"));
                 Assert.That(manifest.GetProperty("duration_ms").GetInt32(), Is.EqualTo(60000));
                 Assert.That(manifest.GetProperty("parse_profile").GetString(), Is.EqualTo("viewer"));
                 Assert.That(manifest.GetProperty("parser_version").GetString(), Is.Not.Empty);
                 Assert.That(manifest.GetProperty("counts").GetProperty("actor_spawned").GetInt32(), Is.EqualTo(1));
+                Assert.That(manifest.GetProperty("net_field_export_groups").GetArrayLength(), Is.Zero);
+                Assert.That(
+                    manifest.GetProperty("counts").GetProperty("undecoded_export_groups").GetInt32(),
+                    Is.EqualTo(1));
+                Assert.That(
+                    manifest.GetProperty("filtered_export_group_summary")[0]
+                        .GetProperty("path").GetString(),
+                    Is.EqualTo("/Game/Export"));
+                Assert.That(
+                    manifest.GetProperty("filtered_export_group_summary")[0]
+                        .GetProperty("sample_class_path").GetString(),
+                    Is.EqualTo("/Game/Class"));
                 Assert.That(manifest.GetProperty("limitations").GetArrayLength(), Is.GreaterThan(0));
             });
         }
@@ -286,5 +327,13 @@ public class ReplayExportTests
         public string Ignored { get; } = "not decoded";
 
         public bool HasDecoded(string propertyName) => DecodedProperties.Contains(propertyName);
+    }
+
+    private sealed class RoundResultPayload
+    {
+        public AresRoundResult[] RoundResults { get; } =
+        [
+            new(0, "Blue", AresTeamRole.Defender, AresRoundOutcome.Defuse),
+        ];
     }
 }
