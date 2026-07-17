@@ -5,10 +5,17 @@ internal static class ReplayPath
     public const string ClassNetCacheSuffix = "_ClassNetCache";
     private const string CoreSegment = "/_Core/";
     private const string CharactersRoot = "/Game/Characters/";
+    private const string DefaultObjectPrefix = "Default__";
 
     public static IEnumerable<string> LookupKeys(string path)
     {
         yield return path;
+
+        var defaultAlias = TryGetDefaultObjectAlias(path);
+        if (defaultAlias is not null)
+        {
+            yield return defaultAlias;
+        }
 
         var coreAlias = TryGetCoreAlias(path);
         if (coreAlias is not null)
@@ -83,5 +90,17 @@ internal static class ReplayPath
     private static string? TryGetCoreAlias(string path)
     {
         return TryGetAlias(path, out var alias) ? alias : null;
+    }
+
+    private static string? TryGetDefaultObjectAlias(string path)
+    {
+        if (path.StartsWith(DefaultObjectPrefix, StringComparison.Ordinal))
+        {
+            return path[DefaultObjectPrefix.Length..];
+        }
+
+        return path.IndexOfAny(['/', '.', ':']) < 0
+            ? DefaultObjectPrefix + path
+            : null;
     }
 }

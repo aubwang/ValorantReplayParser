@@ -13,6 +13,7 @@ internal sealed class AresAttributeSetDescriptor : ExportGroupDescriptor<AresAtt
     public float MaxHealth { get; set; }
     public float Shield { get; set; }
     public float MaxShield { get; set; }
+    public float Healing { get; set; }
     public float Damage { get; set; }
     public float BaseValue { get; set; }
     public float CurrentValue { get; set; }
@@ -23,6 +24,7 @@ internal sealed class AresAttributeSetDescriptor : ExportGroupDescriptor<AresAtt
         AddProperty(x => x.MaxHealth, ExportCategory.Ability).Float();
         AddProperty(x => x.Shield, ExportCategory.Ability).Float();
         AddProperty(x => x.MaxShield, ExportCategory.Ability).Float();
+        AddProperty(x => x.Healing, ExportCategory.Ability).FloatOrRaw();
         AddProperty(x => x.Damage, ExportCategory.Ability).Float();
         AddProperty(x => x.BaseValue, ExportCategory.Ability).FloatOrRaw();
         AddProperty(x => x.CurrentValue, ExportCategory.Ability).FloatOrRaw();

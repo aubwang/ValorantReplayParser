@@ -1,4 +1,5 @@
 ﻿using Replay.Encoding.Net;
+using Replay.Models.Net;
 using Replay.Unreal.Channels;
 using Replay.Unreal.Parsing;
 
@@ -198,8 +199,42 @@ internal sealed class ContentBlockPathResolver
             return true;
         }
 
+        group = UniqueLeafMatch(path);
+        if (group is not null)
+        {
+            exportGroupPath = group.PathName;
+            return true;
+        }
+
         exportGroupPath = string.Empty;
         return false;
+    }
+
+    private NetFieldExportGroup? UniqueLeafMatch(string path)
+    {
+        if (path.IndexOfAny(['/', '.', ':']) >= 0)
+        {
+            return null;
+        }
+
+        NetFieldExportGroup? match = null;
+        var suffix = "." + path;
+        foreach (var candidate in _netGuidCache.ExportGroupsByPath.Values)
+        {
+            if (!candidate.PathName.EndsWith(suffix, StringComparison.Ordinal))
+            {
+                continue;
+            }
+
+            if (match is not null && !ReferenceEquals(match, candidate))
+            {
+                return null;
+            }
+
+            match = candidate;
+        }
+
+        return match;
     }
 
     private bool TryResolveCandidate(

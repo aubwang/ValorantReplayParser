@@ -20,6 +20,23 @@ var logger = loggerFactory.CreateLogger("CliReader");
 
 try
 {
+    if (args.Length > 0 && args[0] == "export")
+    {
+        if (!ExportOptions.TryParse(args, out var options, out var error))
+        {
+            logger.LogError("{Error}{NewLine}{Usage}", error, Environment.NewLine, ExportOptions.Usage);
+            return 1;
+        }
+
+        logger.LogInformation(
+            "Exporting replay {ReplayPath} to {OutputDirectory}",
+            options!.ReplayPath,
+            options.OutputDirectory);
+        new ReplayExportRunner(loggerFactory, new ReplayExportManifestWriter()).Run(options);
+        logger.LogInformation("Export complete.");
+        return 0;
+    }
+
     if (args.Length != 1)
     {
         logger.LogError("Usage: CliReader <replay-path>");
@@ -61,6 +78,16 @@ try
 catch (ReplayParseException exception)
 {
     logger.LogError(exception, "Failed to parse replay.");
+    return 1;
+}
+catch (IOException exception)
+{
+    logger.LogError(exception, "Replay input or export output could not be accessed.");
+    return 1;
+}
+catch (UnauthorizedAccessException exception)
+{
+    logger.LogError(exception, "Replay input or export output access was denied.");
     return 1;
 }
 finally

@@ -15,6 +15,9 @@ internal static class ValorantPayloadDecoders
 
     public static IFieldDecoder RawPayload(string typeName) => new RawPayloadDecoder(typeName);
 
+    public static IFieldDecoder CapturedPayload(string typeName) =>
+        new CapturedPayloadDecoder(typeName);
+
     public static IFieldDecoder PrimitiveOrRaw(IFieldDecoder primitiveDecoder, string typeName) =>
         new PrimitiveOrRawDecoder(primitiveDecoder, typeName);
 
@@ -71,6 +74,27 @@ internal static class ValorantPayloadDecoders
         }
     }
 
+    private sealed class CapturedPayloadDecoder(string typeName) : IFieldDecoder
+    {
+        public DecodedFieldValue Decode(ref FieldDecodeContext context, FBitArchive archive)
+        {
+            var bitCount = checked((int)archive.BitsRemaining);
+            var bytes = new byte[(bitCount + 7) / 8];
+            for (var bit = 0; bit < bitCount; bit++)
+            {
+                if (archive.ReadBit())
+                {
+                    bytes[bit / 8] |= (byte)(1 << (bit % 8));
+                }
+            }
+
+            return DecodedFieldValue.FromObject(new ValorantCapturedPayload(
+                typeName,
+                bitCount,
+                Convert.ToBase64String(bytes)));
+        }
+    }
+
     private sealed class NoParametersRpcDecoder : IRpcDecoder
     {
         public DecodedPayloadResult Decode(ref FieldDecodeContext context, FBitArchive archive)
@@ -115,3 +139,8 @@ public sealed record ValorantRawPayload(string TypeName, int BitCount)
 {
     public override string ToString() => $"{TypeName}({BitCount} bits)";
 }
+
+public sealed record ValorantCapturedPayload(
+    string TypeName,
+    int BitCount,
+    string BitsBase64);

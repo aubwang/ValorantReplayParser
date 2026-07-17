@@ -48,7 +48,7 @@ internal sealed class BombGameStateDescriptor : ExportGroupDescriptor<BombGameSt
     public string? MatchState { get; set; }
     public uint WinningTeam { get; set; }
     public byte CompletionState { get; set; }
-    public ValorantRawPayload? TeamEconomy { get; set; }
+    public object? TeamEconomy { get; set; }
     public float DisplayRemainingTime { get; set; }
     public float StateRemainingTime { get; set; }
     public float GamePhaseElapsedTime { get; set; }
@@ -56,7 +56,7 @@ internal sealed class BombGameStateDescriptor : ExportGroupDescriptor<BombGameSt
     public float AuthGameplayEndTimestamp { get; set; }
     public int NetServerMaxTickRate { get; set; }
     public string? MatchID { get; set; }
-    public ValorantRawPayload? RoundResults { get; set; }
+    public object? RoundResults { get; set; }
     public byte Phase { get; set; }
     public ValorantRawPayload? RoundParticipantsInfos { get; set; }
     public int RoundNumber { get; set; }
@@ -68,7 +68,7 @@ internal sealed class BombGameStateDescriptor : ExportGroupDescriptor<BombGameSt
         AddProperty(x => x.MatchState).FNameOrRaw();
         AddProperty(x => x.WinningTeam).ObjectNetGuidOrRaw();
         AddProperty(x => x.CompletionState).EnumByteOrRaw();
-        AddProperty(x => x.TeamEconomy).Decode(ValorantPayloadDecoders.RawPayload("TArray<FAresTeamEconomy>"));
+        AddProperty(x => x.TeamEconomy).Decode(new CompatibleAresTeamEconomyDecoder());
         AddProperty(x => x.DisplayRemainingTime).FloatOrRaw();
         AddProperty(x => x.StateRemainingTime).FloatOrRaw();
         AddProperty(x => x.GamePhaseElapsedTime).FloatOrRaw();
@@ -76,7 +76,7 @@ internal sealed class BombGameStateDescriptor : ExportGroupDescriptor<BombGameSt
         AddProperty(x => x.AuthGameplayEndTimestamp).FloatOrRaw();
         AddProperty(x => x.NetServerMaxTickRate).Int32OrRaw();
         AddProperty(x => x.MatchID).FStringOrRaw();
-        AddProperty(x => x.RoundResults).Decode(ValorantPayloadDecoders.RawPayload("TArray<FAresRoundResult>"));
+        AddProperty(x => x.RoundResults).Decode(new CompatibleAresRoundResultsDecoder());
         AddProperty(x => x.Phase).EnumByteOrRaw();
         AddProperty(x => x.RoundParticipantsInfos)
             .Decode(ValorantPayloadDecoders.RawPayload("TArray<FRoundParticipantsInfo>"));
@@ -91,7 +91,7 @@ internal sealed class BombCombatReportComponentDescriptor : ExportGroupDescripto
     public override ExportCategory Categories => ExportCategory.GameState | ExportCategory.Gunplay;
     public override ExportGroupKind Kind => ExportGroupKind.Component;
 
-    public ValorantRawPayload? Rounds { get; set; }
+    public object? Rounds { get; set; }
     public int RoundNum { get; set; }
     public ValorantRawPayload? Reports { get; set; }
     public int RoundNumber { get; set; }
@@ -127,7 +127,7 @@ internal sealed class BombCombatReportComponentDescriptor : ExportGroupDescripto
 
     protected override void Configure()
     {
-        AddProperty(x => x.Rounds).Decode(ValorantPayloadDecoders.RawPayload("TArray<FRoundReports>"));
+        AddProperty(x => x.Rounds).Decode(new CompatibleCombatRoundReportsDecoder());
         AddProperty(x => x.RoundNum).Int32OrRaw();
         AddProperty(x => x.Reports).Decode(ValorantPayloadDecoders.RawPayload("TArray<FCharacterCombatReport>"));
         AddProperty(x => x.RoundNumber).Int32OrRaw();
@@ -231,11 +231,13 @@ internal sealed class ChildDamageSectionComponentDescriptor
     public override ExportGroupKind Kind => ExportGroupKind.Component;
 
     public bool Alive { get; set; }
+    public float Life { get; set; }
     public float MaximumLife { get; set; }
 
     protected override void Configure()
     {
         AddProperty("bAlive", x => x.Alive).BoolOrRaw();
+        AddProperty(x => x.Life).FloatOrRaw();
         AddProperty(x => x.MaximumLife).FloatOrRaw();
     }
 }
@@ -248,10 +250,14 @@ internal sealed class ChildRegionDamageSectionComponentDescriptor
     public override ExportGroupKind Kind => ExportGroupKind.Component;
 
     public bool Alive { get; set; }
+    public float Life { get; set; }
+    public float MaximumLife { get; set; }
 
     protected override void Configure()
     {
         AddProperty("bAlive", x => x.Alive).BoolOrRaw();
+        AddProperty(x => x.Life).FloatOrRaw();
+        AddProperty(x => x.MaximumLife).FloatOrRaw();
     }
 }
 
@@ -263,10 +269,14 @@ internal sealed class AttachedDamageSectionComponentDescriptor
     public override ExportGroupKind Kind => ExportGroupKind.Component;
 
     public bool Alive { get; set; }
+    public float Life { get; set; }
+    public float MaximumLife { get; set; }
 
     protected override void Configure()
     {
         AddProperty("bAlive", x => x.Alive).BoolOrRaw();
+        AddProperty(x => x.Life).FloatOrRaw();
+        AddProperty(x => x.MaximumLife).FloatOrRaw();
     }
 }
 

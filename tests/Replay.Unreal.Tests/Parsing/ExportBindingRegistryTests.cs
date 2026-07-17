@@ -25,6 +25,21 @@ public class ExportBindingRegistryTests
     }
 
     [Test]
+    public void OnExportGroupAdded_BindsDefaultObjectToShortClassPath()
+    {
+        var registry = CreateRegistry(catalog => catalog.Add(new TestDescriptor()));
+        registry.OnExportGroupAdded(CreateReplayGroup("Default__Test_C", exports:
+        [
+            (0u, "FieldA"),
+        ]));
+
+        var bound = registry.GetBoundGroup("Test_C");
+
+        Assert.That(bound, Is.Not.Null);
+        Assert.That(bound!.FieldsByHandle[0].Enabled, Is.True);
+    }
+
+    [Test]
     public void GetExportGroupKind_UsesDescriptorBeforeReplayGroupIsBound()
     {
         var registry = CreateRegistry(catalog => catalog.Add(new TestDescriptor()));
