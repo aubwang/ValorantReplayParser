@@ -43,6 +43,74 @@ public class ValorantShotEventEnricherTests
         });
     }
 
+    [TestCase("/Game/Guns/Rifle/FiringState", ValorantShotFireMode.Primary)]
+    [TestCase("/Game/Guns/Rifle/ZoomedFiringState", ValorantShotFireMode.Alternate)]
+    [TestCase("/Game/Guns/Burst/FiringStateBurst", ValorantShotFireMode.Alternate)]
+    public void Emit_FiringStatePath_EnrichesFireMode(string path, ValorantShotFireMode expected)
+    {
+        var sink = new CapturingReplayEventSink();
+        var cache = new NetGuidCache();
+        cache.SetNetGuidPath(368, path);
+        var enricher = new ValorantShotEventEnricher(sink, cache);
+
+        enricher.Emit(Shot(firingState: 368));
+
+        var shot = sink.Events.OfType<ValorantShotReceived>().Single().Shot;
+        Assert.Multiple(() =>
+        {
+            Assert.That(shot.FireMode, Is.EqualTo(expected));
+            Assert.That(shot.FireModeEvidence, Does.Contain(path));
+        });
+    }
+
+    [Test]
+    public void Emit_OuterAltFirePath_TakesPrecedenceOverGenericState()
+    {
+        var sink = new CapturingReplayEventSink();
+        var cache = new NetGuidCache();
+        cache.SetNetGuidPath(368, "FiringState", new Replay.Models.Net.NetworkGuid(369));
+        cache.SetNetGuidPath(369, "BasePistol_FXC_AltFire");
+        var enricher = new ValorantShotEventEnricher(sink, cache);
+
+        enricher.Emit(Shot(firingState: 368));
+
+        Assert.That(sink.Events.OfType<ValorantShotReceived>().Single().Shot.FireMode,
+            Is.EqualTo(ValorantShotFireMode.Alternate));
+    }
+
+    [Test]
+    public void Emit_MissingFiringStatePath_LeavesFireModeUnknown()
+    {
+        var sink = new CapturingReplayEventSink();
+        var enricher = new ValorantShotEventEnricher(sink, new NetGuidCache());
+
+        enricher.Emit(Shot(firingState: 368));
+
+        var shot = sink.Events.OfType<ValorantShotReceived>().Single().Shot;
+        Assert.Multiple(() =>
+        {
+            Assert.That(shot.FireMode, Is.EqualTo(ValorantShotFireMode.Unknown));
+            Assert.That(shot.FireModeEvidence, Is.Null);
+        });
+    }
+
+    [Test]
+    public void Emit_AltFireSource_EnrichesWithoutFiringStatePath()
+    {
+        var sink = new CapturingReplayEventSink();
+        var enricher = new ValorantShotEventEnricher(sink, new NetGuidCache());
+
+        enricher.Emit(Shot(sourceId: "FXC_BasePistol_AltFire"));
+
+        Assert.That(sink.Events.OfType<ValorantShotReceived>().Single().Shot.FireMode,
+            Is.EqualTo(ValorantShotFireMode.Alternate));
+    }
+
+    private static ValorantShotReceived Shot(uint? firingState = null, string? sourceId = null) => new(
+        1, 2, 30, 0, 4, new ValorantShot(
+            null, null, sourceId, null, null, null, null, null, null, null, null, null, null, null, null,
+            10, firingState, [], 500, null));
+
     private static ExportGroupReceived ExportGroup(uint actorNetGuid, ExportGroupDescriptor payload) => new(
         0, 0, actorNetGuid, 0, 0, true, false, 0, payload.Path, payload.Kind, payload.Categories,
         0, 0, null, null, null, 0, 0, true, payload, 0, []);

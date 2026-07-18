@@ -22,4 +22,13 @@ public sealed record ValorantShot(
     uint? FiringState,
     IReadOnlyList<FVector> AttackVectors,
     uint? EffectEquippable,
-    ValorantEquippable? Equippable);
+    ValorantEquippable? Equippable,
+    ValorantShotFireMode FireMode = ValorantShotFireMode.Unknown,
+    string? FireModeEvidence = null);
+
+public enum ValorantShotFireMode
+{
+    Unknown,
+    Primary,
+    Alternate,
+}

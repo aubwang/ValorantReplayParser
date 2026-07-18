@@ -35,7 +35,16 @@ internal sealed class ValorantShotEventEnricher : IReplayEventSink
                 TrackWeaponRpc(rpc);
                 break;
             case ValorantShotReceived shot:
-                replayEvent = shot with { Shot = shot.Shot with { Equippable = ResolveShotEquippable(shot.Shot) } };
+                var fireMode = ValorantShotFireModeResolver.Resolve(shot.Shot, _netGuidCache);
+                replayEvent = shot with
+                {
+                    Shot = shot.Shot with
+                    {
+                        Equippable = ResolveShotEquippable(shot.Shot),
+                        FireMode = fireMode.FireMode,
+                        FireModeEvidence = fireMode.Evidence,
+                    },
+                };
                 break;
         }
 
@@ -197,4 +206,72 @@ internal sealed class ValorantShotEventEnricher : IReplayEventSink
 
         _selectedEquippableByCharacter[characterNetGuid] = equippableNetGuid;
     }
+}
+
+internal static class ValorantShotFireModeResolver
+{
+    private const int MaxOuterDepth = 16;
+    private static readonly string[] AlternateMarkers =
+    [
+        "altfire",
+        "zoomedfire",
+        "zoomedfiring",
+        "firingstateburst",
+        "burstfiringstate",
+        "burstmode",
+    ];
+
+    public static ValorantShotFireModeResolution Resolve(ValorantShot shot, NetGuidCache netGuidCache)
+    {
+        ArgumentNullException.ThrowIfNull(netGuidCache);
+
+        if (ContainsAlternateMarker(shot.SourceId))
+        {
+            return new ValorantShotFireModeResolution(
+                ValorantShotFireMode.Alternate,
+                $"source:{shot.SourceId}");
+        }
+
+        if (shot.FiringState is not { } firingState || firingState == 0)
+        {
+            return ValorantShotFireModeResolution.Unknown;
+        }
+
+        var paths = new List<string>();
+        var current = firingState;
+        for (var depth = 0; depth < MaxOuterDepth && current != 0; depth++)
+        {
+            if (netGuidCache.TryGetPath(current, out var path) && !string.IsNullOrWhiteSpace(path))
+            {
+                paths.Add(path);
+            }
+
+            if (!netGuidCache.TryGetOuterNetGuid(current, out var outer))
+            {
+                break;
+            }
+
+            current = outer.Value;
+        }
+
+        if (paths.Count == 0)
+        {
+            return ValorantShotFireModeResolution.Unknown;
+        }
+
+        var evidence = $"firing-state:{string.Join(" -> ", paths)}";
+        return paths.Any(ContainsAlternateMarker)
+            ? new ValorantShotFireModeResolution(ValorantShotFireMode.Alternate, evidence)
+            : new ValorantShotFireModeResolution(ValorantShotFireMode.Primary, evidence);
+    }
+
+    private static bool ContainsAlternateMarker(string? value) =>
+        !string.IsNullOrWhiteSpace(value) && AlternateMarkers.Any(marker =>
+            value.Contains(marker, StringComparison.OrdinalIgnoreCase));
+}
+
+internal sealed record ValorantShotFireModeResolution(ValorantShotFireMode FireMode, string? Evidence)
+{
+    public static ValorantShotFireModeResolution Unknown { get; } =
+        new(ValorantShotFireMode.Unknown, null);
 }
