@@ -1,6 +1,6 @@
 using System.Text.Json;
 
-namespace CliReader;
+namespace CliReader.JsonExport;
 
 internal sealed class NdjsonWriter : IDisposable
 {

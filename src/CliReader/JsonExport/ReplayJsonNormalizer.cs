@@ -4,12 +4,12 @@ using System.Text.Json;
 using Replay.Models.Descriptors;
 using Replay.Models.Unreal;
 
-namespace CliReader;
+namespace CliReader.JsonExport;
 
 internal sealed class ReplayJsonNormalizer
 {
-    private const int MaxDepth = 12;
-    private const int MaxCollectionItems = 4096;
+    internal const int MaxDepth = 12;
+    internal const int MaxCollectionItems = 4096;
 
     public void WriteValue(Utf8JsonWriter writer, object? value)
     {
@@ -112,6 +112,12 @@ internal sealed class ReplayJsonNormalizer
                 return true;
             case byte[] bytes:
                 writer.WriteBase64StringValue(bytes);
+                return true;
+            case ReadOnlyMemory<byte> bytes:
+                writer.WriteBase64StringValue(bytes.Span);
+                return true;
+            case Memory<byte> bytes:
+                writer.WriteBase64StringValue(bytes.Span);
                 return true;
             default:
                 return false;
@@ -240,7 +246,7 @@ internal sealed class ReplayJsonNormalizer
         {
             return property.GetValue(value);
         }
-        catch (TargetInvocationException)
+        catch (Exception exception) when (exception is TargetInvocationException or NotSupportedException)
         {
             return null;
         }

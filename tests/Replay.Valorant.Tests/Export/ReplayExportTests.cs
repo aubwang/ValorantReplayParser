@@ -1,5 +1,5 @@
 using System.Text.Json;
-using CliReader;
+using CliReader.JsonExport;
 using Replay.Encoding.Archives;
 using Replay.Models.Descriptors;
 using Replay.Models.Events;
@@ -7,6 +7,7 @@ using Replay.Models.Net;
 using Replay.Models.Replay;
 using Replay.Models.Unreal;
 using Replay.Unreal.Readers;
+using Replay.Valorant.Combat;
 using Replay.Valorant.GameState;
 using Replay.Valorant.Movement;
 
@@ -15,18 +16,13 @@ namespace Replay.Valorant.Tests.Export;
 public class ReplayExportTests
 {
     [Test]
-    public void ExportOptions_ParsesViewerProfile()
+    public void ExportOptions_Create_ResolvesViewerProfile()
     {
-        var parsed = ExportOptions.TryParse(
-            ["export", "match.replay", "--output", "bundle", "--profile", "viewer"],
-            out var options,
-            out var error);
+        var options = ExportOptions.Create("match.replay", "bundle", "viewer");
 
         Assert.Multiple(() =>
         {
-            Assert.That(parsed, Is.True);
-            Assert.That(error, Is.Null);
-            Assert.That(options!.ReplayPath, Is.EqualTo("match.replay"));
+            Assert.That(options.ReplayPath, Is.EqualTo("match.replay"));
             Assert.That(options.OutputDirectory, Is.EqualTo("bundle"));
             Assert.That(options.ProfileName, Is.EqualTo("viewer"));
             Assert.That(options.ParseProfile.CaptureDiagnosticFields, Is.True);
@@ -47,13 +43,14 @@ public class ReplayExportTests
             sink.Emit(Export(wasDecoded: true, payload: new TestPayload()));
             sink.Emit(Rpc());
 
+            var statistics = sink.Statistics;
             Assert.Multiple(() =>
             {
-                Assert.That(sink.EventCount, Is.EqualTo(4));
-                Assert.That(sink.FilteredExportGroupCount, Is.EqualTo(2));
-                Assert.That(sink.UndecodedExportGroupCount, Is.EqualTo(1));
-                Assert.That(sink.EmptyDecodedExportGroupCount, Is.EqualTo(1));
-                Assert.That(sink.FilteredExportGroups.Count, Is.EqualTo(2));
+                Assert.That(statistics.EventCount, Is.EqualTo(4));
+                Assert.That(statistics.FilteredExportGroupCount, Is.EqualTo(2));
+                Assert.That(statistics.UndecodedExportGroupCount, Is.EqualTo(1));
+                Assert.That(statistics.EmptyDecodedExportGroupCount, Is.EqualTo(1));
+                Assert.That(statistics.FilteredExportGroups.Count, Is.EqualTo(2));
             });
         }
 
@@ -86,6 +83,46 @@ public class ReplayExportTests
     }
 
     [Test]
+    public void EventSink_WritesValorantShotAsNestedSnakeCaseObject()
+    {
+        using var events = new MemoryStream();
+        using var movement = new MemoryStream();
+        using (var sink = CreateSink(events, movement))
+        {
+            sink.Emit(Shot());
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(sink.Statistics.EventCount, Is.EqualTo(1));
+                Assert.That(sink.Statistics.ValorantShotReceivedCount, Is.EqualTo(1));
+                Assert.That(sink.Statistics.MovementCount, Is.Zero);
+            });
+        }
+
+        using var document = ParseLines(events).Single();
+        var exported = document.RootElement;
+        var shot = exported.GetProperty("shot");
+        Assert.Multiple(() =>
+        {
+            Assert.That(exported.GetProperty("type").GetString(), Is.EqualTo("valorant_shot_received"));
+            Assert.That(exported.GetProperty("time_ms").GetInt64(), Is.EqualTo(4250));
+            Assert.That(exported.GetProperty("actor_net_guid").GetUInt32(), Is.EqualTo(100));
+            Assert.That(exported.GetProperty("object_net_guid").GetUInt32(), Is.EqualTo(101));
+            Assert.That(exported.GetProperty("channel").GetUInt32(), Is.EqualTo(7));
+            Assert.That(shot.GetProperty("effect_id").GetUInt64(), Is.EqualTo(99));
+            Assert.That(shot.GetProperty("alliance_filter").GetString(), Is.EqualTo("alliance_enemy"));
+            Assert.That(shot.GetProperty("location").GetProperty("x").GetDouble(), Is.EqualTo(1));
+            Assert.That(shot.GetProperty("rotation").GetProperty("yaw").GetDouble(), Is.EqualTo(5));
+            Assert.That(shot.GetProperty("attack_vectors").GetArrayLength(), Is.EqualTo(2));
+            Assert.That(shot.GetProperty("fire_mode").GetString(), Is.EqualTo("alternate"));
+            Assert.That(shot.GetProperty("fire_mode_evidence").GetString(), Is.EqualTo("source:ZoomedFire"));
+            Assert.That(shot.GetProperty("equippable").GetProperty("net_guid").GetUInt32(), Is.EqualTo(500));
+            Assert.That(shot.GetProperty("equippable").GetProperty("category").GetString(), Is.EqualTo("rifle"));
+        });
+        Assert.That(movement.ToArray(), Is.Empty);
+    }
+
+    [Test]
     public void EventSink_WritesStructuredRoundResultPayload()
     {
         using var events = new MemoryStream();
@@ -106,6 +143,23 @@ public class ReplayExportTests
             Assert.That(result.GetProperty("WinningTeam").GetString(), Is.EqualTo("Blue"));
             Assert.That(result.GetProperty("WinningTeamRole").GetString(), Is.EqualTo("defender"));
             Assert.That(result.GetProperty("RoundResult").GetString(), Is.EqualTo("defuse"));
+        });
+    }
+
+    [Test]
+    public void JsonNormalizer_WritesMemoryAndTreatsNonInvokablePropertiesAsNull()
+    {
+        using var stream = new MemoryStream();
+        using (var writer = new Utf8JsonWriter(stream))
+        {
+            new ReplayJsonNormalizer().WriteValue(writer, new ReflectionPayload([1, 2, 3]));
+        }
+
+        using var document = JsonDocument.Parse(stream.ToArray());
+        Assert.Multiple(() =>
+        {
+            Assert.That(document.RootElement.GetProperty("Data").GetString(), Is.EqualTo("AQID"));
+            Assert.That(document.RootElement.GetProperty("Span").ValueKind, Is.EqualTo(JsonValueKind.Null));
         });
     }
 
@@ -165,6 +219,7 @@ public class ReplayExportTests
             using var movement = new MemoryStream();
             using var sink = CreateSink(events, movement);
             sink.Emit(Spawned());
+            sink.Emit(Shot());
             sink.Emit(Export(wasDecoded: false, payload: null));
 
             new ReplayExportManifestWriter().Write(
@@ -174,19 +229,23 @@ public class ReplayExportTests
                 42,
                 "viewer",
                 context,
-                sink);
+                sink.Statistics);
 
             using var document = JsonDocument.Parse(File.ReadAllText(Path.Combine(directory, "manifest.json")));
             var manifest = document.RootElement;
             Assert.Multiple(() =>
             {
-                Assert.That(manifest.GetProperty("schema_version").GetInt32(), Is.EqualTo(3));
+                Assert.That(manifest.GetProperty("schema_version").GetInt32(), Is.EqualTo(4));
                 Assert.That(manifest.GetProperty("source_sha256").GetString(), Has.Length.EqualTo(64));
                 Assert.That(manifest.GetProperty("replay_build").GetString(), Does.EndWith("release-13.01"));
                 Assert.That(manifest.GetProperty("duration_ms").GetInt32(), Is.EqualTo(60000));
                 Assert.That(manifest.GetProperty("parse_profile").GetString(), Is.EqualTo("viewer"));
                 Assert.That(manifest.GetProperty("parser_version").GetString(), Is.Not.Empty);
                 Assert.That(manifest.GetProperty("counts").GetProperty("actor_spawned").GetInt32(), Is.EqualTo(1));
+                Assert.That(
+                    manifest.GetProperty("counts").GetProperty("valorant_shot_received").GetInt32(),
+                    Is.EqualTo(1));
+                Assert.That(manifest.GetProperty("counts").GetProperty("events").GetInt32(), Is.EqualTo(2));
                 Assert.That(manifest.GetProperty("net_field_export_groups").GetArrayLength(), Is.Zero);
                 Assert.That(
                     manifest.GetProperty("counts").GetProperty("undecoded_export_groups").GetInt32(),
@@ -212,7 +271,7 @@ public class ReplayExportTests
         new(
             new NdjsonWriter(events),
             new NdjsonWriter(movement),
-            new ReplayJsonNormalizer());
+            new ReplayEventJsonWriter(new ReplayJsonNormalizer()));
 
     private static ActorSpawned Spawned() =>
         new(
@@ -275,6 +334,37 @@ public class ReplayExportTests
             0,
             []);
 
+    private static ValorantShotReceived Shot() =>
+        new(
+            4.25f,
+            40,
+            100,
+            101,
+            7,
+            new ValorantShot(
+                EffectId: 99,
+                StartMovementTime: 1.5f,
+                SourceId: "ZoomedFire",
+                IsLocalEffect: true,
+                IsTransient: false,
+                WaitOnReplicationActor: 200,
+                AllianceFilter: EAresAlliance.AllianceEnemy,
+                Location: new FVector(1, 2, 3),
+                Rotation: new FRotator(4, 5, 6),
+                AmmoRemaining: 24,
+                NumProjectiles: 1,
+                RandomSeed: 7,
+                TracerOption: 2,
+                BurstShotNumber: 3,
+                YawSwitch: 0,
+                FiringPlayerState: 300,
+                FiringState: 400,
+                AttackVectors: [new FVector(7, 8, 9), new FVector(10, 11, 12)],
+                EffectEquippable: 500,
+                Equippable: new ValorantEquippable(500, "Vandal", ValorantEquippableCategory.Rifle, "/Game/Vandal"),
+                FireMode: ValorantShotFireMode.Alternate,
+                FireModeEvidence: "source:ZoomedFire"));
+
     private static MovementMove Movement() =>
         new(
             Marker: 1,
@@ -335,5 +425,13 @@ public class ReplayExportTests
         [
             new(0, "Blue", AresTeamRole.Defender, AresRoundOutcome.Defuse),
         ];
+    }
+
+    private sealed class ReflectionPayload(byte[] data)
+    {
+        private readonly byte[] _data = data;
+
+        public ReadOnlyMemory<byte> Data => _data;
+        public ReadOnlySpan<byte> Span => _data;
     }
 }

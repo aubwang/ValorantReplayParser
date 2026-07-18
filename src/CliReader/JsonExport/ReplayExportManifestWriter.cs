@@ -3,11 +3,11 @@ using System.Text.Json;
 using Replay.Unreal.Readers;
 using Replay.Valorant;
 
-namespace CliReader;
+namespace CliReader.JsonExport;
 
 internal sealed class ReplayExportManifestWriter
 {
-    private const int SchemaVersion = 3;
+    private const int SchemaVersion = 4;
 
     public void Write(
         string outputDirectory,
@@ -16,7 +16,7 @@ internal sealed class ReplayExportManifestWriter
         long sourceSize,
         string profileName,
         ReplayReaderContext context,
-        ReplayExportSink sink)
+        ReplayExportStatistics statistics)
     {
         var path = Path.Combine(outputDirectory, "manifest.json");
         var temporaryPath = path + ".tmp";
@@ -36,7 +36,7 @@ internal sealed class ReplayExportManifestWriter
                     sourceSize,
                     profileName,
                     context,
-                    sink);
+                    statistics);
             }
 
             File.Move(temporaryPath, path, overwrite: true);
@@ -55,7 +55,7 @@ internal sealed class ReplayExportManifestWriter
         long sourceSize,
         string profileName,
         ReplayReaderContext context,
-        ReplayExportSink sink)
+        ReplayExportStatistics statistics)
     {
         var version = context.ReplayVersion;
         var parserAssembly = typeof(ValorantReplayReader).Assembly;
@@ -73,9 +73,9 @@ internal sealed class ReplayExportManifestWriter
         writer.WriteString("parser_assembly", parserAssembly.GetName().Name);
         writer.WriteString("parser_version", ParserVersion(parserAssembly));
         WriteStats(writer, context);
-        WriteCounts(writer, sink);
+        WriteCounts(writer, statistics);
         WriteNetFieldExportGroups(writer, context);
-        WriteFilteredExportGroups(writer, sink);
+        WriteFilteredExportGroups(writer, statistics);
         WriteLimitations(writer);
         writer.WriteEndObject();
     }
@@ -93,27 +93,28 @@ internal sealed class ReplayExportManifestWriter
         writer.WriteEndObject();
     }
 
-    private static void WriteCounts(Utf8JsonWriter writer, ReplayExportSink sink)
+    private static void WriteCounts(Utf8JsonWriter writer, ReplayExportStatistics statistics)
     {
         writer.WriteStartObject("counts");
-        writer.WriteNumber("movement", sink.MovementCount);
-        writer.WriteNumber("events", sink.EventCount);
-        writer.WriteNumber("actor_spawned", sink.ActorSpawnedCount);
-        writer.WriteNumber("actor_closed", sink.ActorClosedCount);
-        writer.WriteNumber("export_group_received", sink.ExportGroupCount);
-        writer.WriteNumber("rpc_received", sink.RpcCount);
-        writer.WriteNumber("filtered_export_groups", sink.FilteredExportGroupCount);
-        writer.WriteNumber("undecoded_export_groups", sink.UndecodedExportGroupCount);
-        writer.WriteNumber("empty_decoded_export_groups", sink.EmptyDecodedExportGroupCount);
+        writer.WriteNumber("movement", statistics.MovementCount);
+        writer.WriteNumber("events", statistics.EventCount);
+        writer.WriteNumber("actor_spawned", statistics.ActorSpawnedCount);
+        writer.WriteNumber("actor_closed", statistics.ActorClosedCount);
+        writer.WriteNumber("export_group_received", statistics.ExportGroupCount);
+        writer.WriteNumber("rpc_received", statistics.RpcCount);
+        writer.WriteNumber("valorant_shot_received", statistics.ValorantShotReceivedCount);
+        writer.WriteNumber("filtered_export_groups", statistics.FilteredExportGroupCount);
+        writer.WriteNumber("undecoded_export_groups", statistics.UndecodedExportGroupCount);
+        writer.WriteNumber("empty_decoded_export_groups", statistics.EmptyDecodedExportGroupCount);
         writer.WriteEndObject();
     }
 
     private static void WriteFilteredExportGroups(
         Utf8JsonWriter writer,
-        ReplayExportSink sink)
+        ReplayExportStatistics statistics)
     {
         writer.WriteStartArray("filtered_export_group_summary");
-        foreach (var summary in sink.FilteredExportGroups
+        foreach (var summary in statistics.FilteredExportGroups
                      .OrderByDescending(item => item.Count)
                      .ThenBy(item => item.Path, StringComparer.Ordinal))
         {
@@ -172,7 +173,8 @@ internal sealed class ReplayExportManifestWriter
         writer.WriteStringValue(
             "Undecoded export groups and decoded export shells without payloads are omitted.");
         writer.WriteStringValue(
-            "Unknown payload object graphs are bounded to eight levels and 4096 collection items.");
+            $"Unknown payload object graphs are bounded to {ReplayJsonNormalizer.MaxDepth} levels and " +
+            $"{ReplayJsonNormalizer.MaxCollectionItems} collection items.");
         writer.WriteEndArray();
     }
 

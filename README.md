@@ -81,8 +81,23 @@ dotnet test "ValorantReplayParser.sln"
 
 ## CLI
 
+Log decoded replay activity and a parse summary:
+
 ```powershell
-dotnet run --project "src\CliReader\CliReader.csproj" -- "C:\path\to\replay.vrf"
+dotnet run --project "src\CliReader\CliReader.csproj" -- log "C:\path\to\replay.vrf"
+```
+
+Export replay events and movement as JSON:
+
+```powershell
+dotnet run --project "src\CliReader\CliReader.csproj" -- export "C:\path\to\replay.vrf" --output "C:\path\to\export"
+```
+
+Show the full command or subcommand help:
+
+```powershell
+dotnet run --project "src\CliReader\CliReader.csproj" -- --help
+dotnet run --project "src\CliReader\CliReader.csproj" -- export --help
 ```
 
 ## Special Thanks

@@ -4,7 +4,7 @@ using Replay.Encoding.Archives;
 using Replay.Unreal.Readers;
 using Replay.Valorant;
 
-namespace CliReader;
+namespace CliReader.JsonExport;
 
 internal sealed class ReplayExportRunner
 {
@@ -52,6 +52,6 @@ internal sealed class ReplayExportRunner
             sourceSize,
             options.ProfileName,
             context,
-            sink);
+            sink.Statistics);
     }
 }
