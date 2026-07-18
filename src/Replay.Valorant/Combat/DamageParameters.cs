@@ -28,7 +28,7 @@ public abstract class DamageParameters<T> : ExportGroupDescriptor<T>
     public uint EventInstigatorPawn { get; set; }
     public uint DamagerPlayerState { get; set; }
     public uint KillCreditPlayerState { get; set; }
-    public ValorantRawPayload? RegionalDamage { get; set; }
+    public EAresRegionalDamage? RegionalDamage { get; set; }
     public uint Character { get; set; }
     public float NetTimestamp { get; set; }
     public int RespawnNumber { get; set; }
@@ -56,7 +56,7 @@ public abstract class DamageParameters<T> : ExportGroupDescriptor<T>
         AddPropertyHandle(15, x => x.EventInstigatorPawn, ExportCategory.Gunplay).ObjectNetGuid();
         AddPropertyHandle(16, x => x.DamagerPlayerState, ExportCategory.Gunplay).ObjectNetGuid();
         AddPropertyHandle(17, x => x.KillCreditPlayerState, ExportCategory.Gunplay).ObjectNetGuid();
-        AddRaw(18, x => x.RegionalDamage, "RegionalDamage");
+        AddPropertyHandle(18, x => x.RegionalDamage, ExportCategory.Gunplay).EnumByte();
         AddPropertyHandle(19, x => x.Character, ExportCategory.Gunplay).ObjectNetGuid();
         AddPropertyHandle(20, x => x.NetTimestamp, ExportCategory.Gunplay).Float();
         AddPropertyHandle(21, x => x.RespawnNumber, ExportCategory.Gunplay).Int32();
