@@ -468,6 +468,55 @@ public class BunchPayloadPipelineTests
         });
     }
 
+    [TestCase(ChannelCloseReason.Destroyed)]
+    [TestCase(ChannelCloseReason.Dormancy)]
+    public void ClosedActorChannel_PayloadWithoutReopen_IsSkipped(ChannelCloseReason closeReason)
+    {
+        var context = CreateContext();
+        var reader = new RawPacketReader();
+
+        var open = BuildPacket(w =>
+        {
+            WriteBunchHeaderBits(w, chIndex: 5, bControl: true, bOpen: true);
+            w.BeginPayload();
+            WriteSerializeNewActor(w);
+        });
+        reader.ReadPacket(open, 1, context.BunchPayloadPipeline.HandleBunchPayload);
+
+        var close = BuildPacket(w =>
+        {
+            WriteBunchHeaderBits(
+                w,
+                chIndex: 5,
+                bControl: true,
+                bClose: true,
+                closeReason: closeReason);
+        });
+        reader.ReadPacket(close, 2, context.BunchPayloadPipeline.HandleBunchPayload);
+        var closedChannel = context.ChannelStates[5];
+
+        var postClosePayload = BuildPacket(w =>
+        {
+            WriteBunchHeaderBits(w, chIndex: 5);
+            w.BeginPayload();
+            w.WriteBit(false);
+            w.WriteBit(true);
+            w.WriteIntPacked(8);
+            w.WriteBits(8, 0xAB);
+        });
+        reader.ReadPacket(postClosePayload, 3, context.BunchPayloadPipeline.HandleBunchPayload);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(context.ChannelStates[5], Is.SameAs(closedChannel));
+            Assert.That(closedChannel.IsOpen, Is.False);
+            Assert.That(closedChannel.IsDormant, Is.EqualTo(closeReason == ChannelCloseReason.Dormancy));
+            Assert.That(context.BunchPayloadStats.ContentBlockCount, Is.EqualTo(0));
+            Assert.That(context.BunchPayloadStats.ContentPayloadBitsSkipped, Is.EqualTo(0));
+            Assert.That(context.BunchPayloadStats.MalformedPayloadCount, Is.EqualTo(0));
+        });
+    }
+
     [Test]
     public void ContentBlock_Actor_ReadsPayloadAndSkips()
     {
