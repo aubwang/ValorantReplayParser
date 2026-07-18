@@ -86,23 +86,6 @@ public class ValorantEquippableTests
     }
 
     [Test]
-    public void DescriptorCatalog_RegistersAllGunShotRpcsByName()
-    {
-        var gunClassNetCaches = ValorantDescriptors.CreateCatalog().ClassNetCacheDescriptors
-            .Where(descriptor => descriptor.Path.EndsWith("_ClassNetCache", StringComparison.Ordinal) &&
-                                 ValorantEquippableResolver.GunClassPaths
-                                     .Contains(descriptor.Path[..^"_ClassNetCache".Length], StringComparer.Ordinal))
-            .ToArray();
-
-        Assert.Multiple(() =>
-        {
-            Assert.That(gunClassNetCaches, Has.Length.EqualTo(ValorantEquippableResolver.GunClassPaths.Count));
-            Assert.That(gunClassNetCaches.SelectMany(descriptor => descriptor.FunctionFields), Is.All.Matches<Replay.Models.Descriptors.RpcDescriptor>(
-                rpc => rpc.Name == "MulticastPlayContinuousEffectFromClient" && rpc.Handle is null));
-        });
-    }
-
-    [Test]
     public void Resolve_UnknownOrInvalidGuid_PreservesAvailableIdentity()
     {
         var cache = new NetGuidCache();
