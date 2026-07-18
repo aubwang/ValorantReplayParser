@@ -9,6 +9,7 @@ public static class SprinterDescriptors
         return
         [
             new SprinterAgentDescriptor(),
+            new NeonTunnelDescriptor(),
         ];
     }
 }

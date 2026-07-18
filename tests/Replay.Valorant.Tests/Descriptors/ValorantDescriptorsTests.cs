@@ -70,7 +70,9 @@ public class ValorantDescriptorsTests
             "/Script/ShooterGame.ChildDamageSectionComponent",
             "/Script/ShooterGame.ChildRegionDamageSectionComponent",
             "/Script/ShooterGame.AttachedDamageSectionComponent",
+            "/Game/Characters/Mage/S0/Ability_Q/Projectile_Mage_Q_Wall.Projectile_Mage_Q_Wall_C",
             "/Game/Characters/Phoenix/S0/Ability_Q/Production/Projectile_Phoenix_Q_FlameWall_ThroughWall.Projectile_Phoenix_Q_FlameWall_ThroughWall_C",
+            "/Game/Characters/Sprinter/S0/Ability_4/Projectile_Neon_C_Tunnel.Projectile_Neon_C_Tunnel_C",
         ];
 
         var descriptors = ValorantDescriptors.CreateCatalog().ExportGroupDescriptors;

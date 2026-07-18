@@ -9,6 +9,7 @@ public static class MageDescriptors
         return
         [
             new MageAgentDescriptor(),
+            new MageWallDescriptor(),
         ];
     }
 }
