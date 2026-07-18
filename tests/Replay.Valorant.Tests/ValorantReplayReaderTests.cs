@@ -35,6 +35,77 @@ public class ValorantReplayReaderTests
     }
 
     [Test]
+    public void ReadMetadata_HeaderChunk_ReturnsSupportedMetadataWithoutReadingReplayData()
+    {
+        var archive = new FBinaryArchive(BuildReplayInfo(chunks:
+        [
+            HeaderChunk(BuildHeader()),
+            ReplayDataChunk(0, 10, BuildOodlePayload(1, [0x10])),
+        ]));
+
+        var metadata = new ValorantReplayReader(new FakeOodleDecompressor()).ReadMetadata(archive);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(metadata.FullParseSupportStatus, Is.EqualTo(ValorantReplaySupportStatus.Supported));
+            Assert.That(metadata.FullParseUnsupportedReason, Is.Null);
+            Assert.That(metadata.ReplayHeader.Guid, Is.EqualTo(HeaderGuid));
+            Assert.That(metadata.ReplayInfo.Chunks, Has.Count.EqualTo(1));
+            Assert.That(metadata.ReplayInfo.DataChunks, Is.Empty);
+            Assert.That(archive.AtEnd, Is.False);
+        });
+    }
+
+    [Test]
+    public void ReadMetadata_UnsupportedBranch_ReturnsExplicitSupportStatus()
+    {
+        var archive = new FBinaryArchive(BuildReplayInfo(chunks:
+            [HeaderChunk(BuildHeader("++Ares-Core+release-12.08"))]));
+
+        var metadata = new ValorantReplayReader().ReadMetadata(archive);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(metadata.FullParseSupportStatus, Is.EqualTo(ValorantReplaySupportStatus.UnsupportedVersion));
+            Assert.That(metadata.FullParseUnsupportedReason, Does.Contain("release-12.08"));
+        });
+    }
+
+    [Test]
+    public void Read_UnsupportedBranch_ThrowsBeforeReplayDataIsRead()
+    {
+        var handler = new CapturingReplayDataChunkHandler();
+        var archive = new FBinaryArchive(BuildReplayInfo(chunks:
+        [
+            HeaderChunk(BuildHeader("++Ares-Core+release-12.08")),
+            ReplayDataChunk(0, 10, [0x01], memorySizeInBytes: 1),
+        ]));
+
+        var exception = Assert.Throws<InvalidReplayInfoException>(() =>
+            new ValorantReplayReader(replayDataChunkHandler: handler).Read(archive));
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(exception!.Message, Does.Contain("release-12.08"));
+            Assert.That(handler.Payloads, Is.Empty);
+        });
+    }
+
+    [Test]
+    public void Read_ReplayDataBeforeHeader_ThrowsInvalidReplayInfoException()
+    {
+        var archive = new FBinaryArchive(BuildReplayInfo(chunks:
+        [
+            ReplayDataChunk(0, 10, [0x01], memorySizeInBytes: 1),
+            HeaderChunk(BuildHeader()),
+        ]));
+
+        var exception = Assert.Throws<InvalidReplayInfoException>(() => new ValorantReplayReader().Read(archive));
+
+        Assert.That(exception!.Message, Does.Contain("before the replay header"));
+    }
+
+    [Test]
     public void Read_ReplayDataChunk_DispatchesDecompressedPayloadToHandler()
     {
         var replayDataHandler = new CapturingReplayDataChunkHandler();
@@ -228,7 +299,7 @@ public class ValorantReplayReaderTests
         return bytes.ToArray();
     }
 
-    private static byte[] BuildHeader()
+    private static byte[] BuildHeader(string branch = "++Ares-Core+release-12.10")
     {
         var bytes = new List<byte>();
         AddUInt32(bytes, Constants.NetworkMagic);
@@ -236,18 +307,18 @@ public class ValorantReplayReaderTests
         AddInt32(bytes, 0);
         AddUInt32(bytes, 0x11223344u);
         AddUInt32(bytes, Constants.ExpectedEngineNetworkProtocolVersion);
-        AddUInt32(bytes, 0x55667788u);
+        AddUInt32(bytes, 0);
         AddUnrealGuid(bytes, 0x00112233u, 0x44556677u, 0x8899AABBu, 0xCCDDEEFFu);
-        AddUInt16(bytes, 12);
-        AddUInt16(bytes, 10);
-        AddUInt16(bytes, 1);
+        AddUInt16(bytes, 5);
+        AddUInt16(bytes, 3);
+        AddUInt16(bytes, 2);
         AddUInt32(bytes, 123456u);
-        AddFString(bytes, "++Ares-Core+release-12.10");
+        AddFString(bytes, branch);
         AddUInt32(bytes, 3);
         bytes.AddRange([49, 56, 0]);
-        AddUInt32(bytes, 1001u);
-        AddUInt32(bytes, 1002u);
-        AddUInt32(bytes, 1003u);
+        AddUInt32(bytes, 522u);
+        AddUInt32(bytes, 1009u);
+        AddUInt32(bytes, branch == "++Ares-Core+release-13.00" ? 80u : 77u);
         AddInt32(bytes, 0);
         AddUInt32(bytes, 0);
         AddInt32(bytes, 0);

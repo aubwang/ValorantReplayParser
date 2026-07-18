@@ -5,6 +5,7 @@ using Replay.Encoding.Compression;
 using Replay.Models.Errors;
 using Replay.Models.Replay;
 using Replay.Unreal.Header;
+using Replay.Unreal.Info;
 using Replay.Unreal.Readers;
 
 namespace Replay.Unreal.Chunks;
@@ -22,7 +23,25 @@ public sealed class ReplayChunkDispatcher
         _replayDataChunkHandler = replayDataChunkHandler ?? new PlaybackPacketReplayDataChunkHandler();
     }
 
-    public void DispatchAll(ReplayReaderContext context)
+    public ReplayPreambleReadResult ReadPreamble(FBinaryArchive archive)
+    {
+        try
+        {
+            return ReadPreambleCore(archive);
+        }
+        catch (ArchiveReadException exception)
+        {
+            throw new InvalidReplayInfoException(
+                $"Error while parsing replay chunk: {exception.Message}", exception);
+        }
+        catch (OverflowException exception)
+        {
+            throw new InvalidReplayInfoException(
+                $"Error while parsing replay chunk: {exception.Message}", exception);
+        }
+    }
+
+    public void DispatchRemaining(ReplayReaderContext context)
     {
         var logger = context.LoggerFactory?.CreateLogger<ReplayChunkDispatcher>()
             ?? NullLogger<ReplayChunkDispatcher>.Instance;
@@ -31,6 +50,55 @@ public sealed class ReplayChunkDispatcher
         {
             DispatchNext(context, logger);
         }
+    }
+
+    private static ReplayPreambleReadResult ReadPreambleCore(FBinaryArchive archive)
+    {
+        var replayInfoResult = new ReplayInfoReader(archive).Read();
+        var replayInfo = replayInfoResult.Info;
+
+        while (!archive.AtEnd)
+        {
+            var typeOffset = archive.Position;
+            var chunkType = (ReplayChunkType)archive.ReadUInt32();
+            var chunk = new ReplayChunkInfo
+            {
+                ChunkType = chunkType,
+                SizeInBytes = archive.ReadInt32(),
+                TypeOffset = typeOffset,
+                DataOffset = archive.Position,
+            };
+
+            var chunkIndex = replayInfo.Chunks.Count;
+            replayInfo.Chunks.Add(chunk);
+
+            switch (chunkType)
+            {
+                case ReplayChunkType.Header:
+                    if (replayInfo.HeaderChunkIndex != ReplayInfo.NoChunkIndex)
+                    {
+                        throw new InvalidReplayInfoException("Replay info contains multiple header chunks.");
+                    }
+
+                    var headerArchive = new FBinaryArchive(archive.ReadBytes(chunk.SizeInBytes));
+                    var headerResult = new ReplayHeaderReader(headerArchive).Read();
+                    replayInfo.HeaderChunkIndex = chunkIndex;
+                    replayInfo.IsValid = true;
+                    return new ReplayPreambleReadResult(
+                        replayInfo,
+                        replayInfoResult.SerializationMetadata,
+                        headerResult.Header,
+                        headerResult.ReplayVersion,
+                        headerResult.UEVersion);
+                case ReplayChunkType.ReplayData:
+                    throw new InvalidReplayInfoException("Replay data was encountered before the replay header.");
+                default:
+                    archive.Skip(chunk.SizeInBytes);
+                    break;
+            }
+        }
+
+        throw new InvalidReplayInfoException("Replay info does not contain a valid header chunk.");
     }
 
     private void DispatchNext(ReplayReaderContext context, ILogger<ReplayChunkDispatcher> logger)

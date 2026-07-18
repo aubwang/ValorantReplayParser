@@ -1,12 +1,12 @@
 using Microsoft.Extensions.Logging;
 using Replay.Encoding.Archives;
 using Replay.Encoding.Compression;
+using Replay.Encoding.PayloadEncryption;
 using Replay.Models.Descriptors;
 using Replay.Models.Errors;
 using Replay.Models.Events;
 using Replay.Models.Replay;
 using Replay.Unreal.Chunks;
-using Replay.Unreal.Info;
 using Replay.Unreal.Readers;
 using Replay.Valorant.Combat;
 using Replay.Valorant.Descriptors;
@@ -15,6 +15,15 @@ namespace Replay.Valorant;
 
 public sealed class ValorantReplayReader
 {
+    private const ushort ExpectedReplayMajorVersion = 5;
+    private const ushort ExpectedReplayMinorVersion = 3;
+    private const ushort ExpectedReplayPatchVersion = 2;
+    private const uint ExpectedGameNetworkProtocolVersion = 0;
+    private const uint ExpectedUE4Version = 522;
+    private const uint ExpectedUE5Version = 1009;
+
+    private static readonly PayloadTransformRegistry PayloadTransforms = PayloadTransformRegistry.CreateDefault();
+
     private readonly ReplayChunkDispatcher _chunkDispatcher;
     private readonly IReplayEventSink _eventSink;
     private readonly DescriptorCatalog? _descriptorCatalog;
@@ -59,6 +68,10 @@ public sealed class ValorantReplayReader
 
     public ReplayReaderContext Read(FBinaryArchive archive)
     {
+        var preamble = _chunkDispatcher.ReadPreamble(archive);
+        var metadata = CreateMetadata(preamble);
+        EnsureFullParseSupported(metadata);
+
         var netGuidCache = new Replay.Encoding.Net.NetGuidCache();
         var eventSink = new ValorantShotEventEnricher(_eventSink, netGuidCache);
         var context = new ReplayReaderContext(
@@ -68,18 +81,78 @@ public sealed class ValorantReplayReader
             _parseProfile,
             _loggerFactory,
             netGuidCache);
-        var replayInfoResult = new ReplayInfoReader(archive).Read();
+        context.ReplayInfo = metadata.ReplayInfo;
+        context.ReplayInfoSerializationMetadata = metadata.ReplayInfoSerializationMetadata;
+        context.ReplayHeader = metadata.ReplayHeader;
+        context.ReplayVersion = metadata.ReplayVersion;
+        context.UEVersion = metadata.UEVersion;
 
-        context.ReplayInfo = replayInfoResult.Info;
-        context.ReplayInfoSerializationMetadata = replayInfoResult.SerializationMetadata;
-
-        _chunkDispatcher.DispatchAll(context);
-        context.ReplayInfo.IsValid = context.ReplayInfo.HeaderChunkIndex != ReplayInfo.NoChunkIndex;
-        if (!context.ReplayInfo.IsValid)
-        {
-            throw new InvalidReplayInfoException("Replay info does not contain a valid header chunk.");
-        }
+        _chunkDispatcher.DispatchRemaining(context);
 
         return context;
+    }
+
+    public ValorantReplayMetadata ReadMetadata(FBinaryArchive archive) =>
+        CreateMetadata(_chunkDispatcher.ReadPreamble(archive));
+
+    private static ValorantReplayMetadata CreateMetadata(ReplayPreambleReadResult preamble)
+    {
+        var unsupportedReason = GetUnsupportedReason(preamble);
+        return new ValorantReplayMetadata(
+            preamble.ReplayInfo,
+            preamble.ReplayInfoSerializationMetadata,
+            preamble.ReplayHeader,
+            preamble.ReplayVersion,
+            preamble.UEVersion,
+            unsupportedReason is null
+                ? ValorantReplaySupportStatus.Supported
+                : ValorantReplaySupportStatus.UnsupportedVersion,
+            unsupportedReason);
+    }
+
+    private static void EnsureFullParseSupported(ValorantReplayMetadata metadata)
+    {
+        if (metadata.FullParseSupportStatus == ValorantReplaySupportStatus.Supported)
+        {
+            return;
+        }
+
+        throw new InvalidReplayInfoException(
+            $"Unsupported VALORANT replay version: {metadata.FullParseUnsupportedReason}");
+    }
+
+    private static string? GetUnsupportedReason(ReplayPreambleReadResult preamble)
+    {
+        var replayVersion = preamble.ReplayVersion;
+        if (replayVersion is not
+            {
+                Major: ExpectedReplayMajorVersion,
+                Minor: ExpectedReplayMinorVersion,
+                Patch: ExpectedReplayPatchVersion,
+            })
+        {
+            return $"expected replay version {ExpectedReplayMajorVersion}.{ExpectedReplayMinorVersion}.{ExpectedReplayPatchVersion}, got {replayVersion.Major}.{replayVersion.Minor}.{replayVersion.Patch} for branch '{replayVersion.Branch}'.";
+        }
+
+        if (preamble.ReplayHeader.GameNetworkProtocolVersion != ExpectedGameNetworkProtocolVersion)
+        {
+            return $"expected game network protocol version {ExpectedGameNetworkProtocolVersion}, got {preamble.ReplayHeader.GameNetworkProtocolVersion} for branch '{replayVersion.Branch}'.";
+        }
+
+        if (preamble.UEVersion.UE4Version != ExpectedUE4Version || preamble.UEVersion.UE5Version != ExpectedUE5Version)
+        {
+            return $"expected UE versions {ExpectedUE4Version}/{ExpectedUE5Version}, got {preamble.UEVersion.UE4Version}/{preamble.UEVersion.UE5Version} for branch '{replayVersion.Branch}'.";
+        }
+
+        try
+        {
+            _ = PayloadTransforms.GetRequired(replayVersion.Branch);
+        }
+        catch (UnsupportedPayloadTransformVersionException)
+        {
+            return $"no payload transform is registered for replay branch '{replayVersion.Branch}'.";
+        }
+
+        return null;
     }
 }

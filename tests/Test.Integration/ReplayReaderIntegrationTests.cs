@@ -20,8 +20,25 @@ public class ReplayReaderIntegrationTests
     private const string Branch12_08 = "++Ares-Core+release-12.08";
 
     [Test]
-    public void ReadReplay_12_08_ReportsUnsupportedPayloadTransform() =>
-        ReadReplayReportsUnsupportedPayloadTransform(Replay12_08, Branch12_08);
+    public void ReadReplay_12_08_ReportsUnsupportedVersion() =>
+        ReadReplayReportsUnsupportedVersion(Replay12_08, Branch12_08);
+
+    [Test]
+    public void ReadMetadata_12_08_ReturnsUnsupportedVersionWithoutReadingReplayData()
+    {
+        var archive = new FBinaryArchive(ReadReplayBytes(Replay12_08));
+
+        var metadata = new ValorantReplayReader().ReadMetadata(archive);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(metadata.FullParseSupportStatus, Is.EqualTo(ValorantReplaySupportStatus.UnsupportedVersion));
+            Assert.That(metadata.FullParseUnsupportedReason, Does.Contain(Branch12_08));
+            Assert.That(metadata.ReplayInfo.Chunks, Has.Count.EqualTo(1));
+            Assert.That(metadata.ReplayInfo.DataChunks, Is.Empty);
+            Assert.That(archive.AtEnd, Is.False);
+        });
+    }
 
     [Test]
     public void ReadReplayInfo_12_10_MatchesSnapshot() =>
@@ -46,10 +63,6 @@ public class ReplayReaderIntegrationTests
     [Test]
     public void ReadReplayHeader_13_00_MatchesSnapshot() =>
         ReadReplayHeaderMatchesSnapshot(Replay13_00);
-
-    [Test]
-    public void DecompressReplayData_12_08_MaterializesExpectedSize() =>
-        DecompressReplayDataMaterializesExpectedSize(Replay12_08);
 
     [Test]
     public void DecompressReplayData_12_10_MaterializesExpectedSize() =>
@@ -111,14 +124,14 @@ public class ReplayReaderIntegrationTests
         Snapshot.Match(CreateReplayInfoSnapshot(replayFileName, context));
     }
 
-    private static void ReadReplayReportsUnsupportedPayloadTransform(string replayFileName, string branch)
+    private static void ReadReplayReportsUnsupportedVersion(string replayFileName, string branch)
     {
         var replayBytes = ReadReplayBytes(replayFileName);
         var exception = Assert.Throws<InvalidReplayInfoException>(() => ReadReplay(replayBytes));
 
         Assert.Multiple(() =>
         {
-            Assert.That(exception!.Message, Does.Contain("Unsupported VALORANT property payload transform"));
+            Assert.That(exception!.Message, Does.Contain("Unsupported VALORANT replay version"));
             Assert.That(exception.Message, Does.Contain(branch));
         });
     }
