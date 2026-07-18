@@ -31,6 +31,7 @@ using Replay.Valorant.Descriptors.Agents.Thorne;
 using Replay.Valorant.Descriptors.Agents.Vampire;
 using Replay.Valorant.Descriptors.Agents.Wraith;
 using Replay.Valorant.Descriptors.Agents.Wushu;
+using Replay.Valorant.Descriptors.Effects.Replay;
 using Replay.Valorant.GameState;
 
 namespace Replay.Valorant.Descriptors;

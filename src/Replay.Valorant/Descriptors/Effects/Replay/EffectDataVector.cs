@@ -2,7 +2,7 @@ using Replay.Models.Descriptors;
 using Replay.Models.Unreal;
 using Replay.Unreal.Parsing;
 
-namespace Replay.Valorant.Descriptors;
+namespace Replay.Valorant.Descriptors.Effects.Replay;
 
 public sealed class EffectDataVector : ExportGroupDescriptor<EffectDataVector>
 {

@@ -1,6 +1,6 @@
 using Replay.Models.Descriptors;
 
-namespace Replay.Valorant.Descriptors;
+namespace Replay.Valorant.Descriptors.Effects.Replay;
 
 public sealed class ReplayEffectComponentClassNetCacheDescriptor
     : ClassNetCacheDescriptor<ReplayEffectComponentClassNetCacheDescriptor>

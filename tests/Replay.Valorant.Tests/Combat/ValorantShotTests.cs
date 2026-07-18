@@ -6,6 +6,7 @@ using Replay.Models.Unreal;
 using Replay.Unreal.Parsing;
 using Replay.Valorant.Combat;
 using Replay.Valorant.Descriptors;
+using Replay.Valorant.Descriptors.Effects.Replay;
 
 namespace Replay.Valorant.Tests.Combat;
 

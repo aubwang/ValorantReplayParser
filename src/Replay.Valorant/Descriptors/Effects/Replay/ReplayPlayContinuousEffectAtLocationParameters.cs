@@ -3,7 +3,7 @@ using Replay.Models.Unreal;
 using Replay.Unreal.Parsing;
 using Replay.Valorant.Combat;
 
-namespace Replay.Valorant.Descriptors;
+namespace Replay.Valorant.Descriptors.Effects.Replay;
 
 public sealed class ReplayPlayContinuousEffectAtLocationParameters
     : ExportGroupDescriptor<ReplayPlayContinuousEffectAtLocationParameters>, IDecodedPayloadEventEmitter
