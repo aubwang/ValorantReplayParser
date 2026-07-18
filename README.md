@@ -54,7 +54,7 @@ reader.Read(archive);
 | Player Movement   | ✔      |
 | Agents            | ✔      |
 | Abilities         | 🚧     |
-| Gunplay           | ❌      |
+| Gunplay           | ✔      |
 | Game State        | ❌      |
 | World State       | ❌      |
 | Stable public API | ❌      |
