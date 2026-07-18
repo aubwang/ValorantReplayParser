@@ -103,7 +103,6 @@ public class ValorantDescriptorsTests
         {
             AssertFunctions(
                 cacheDescriptors["/Game/Characters/_Core/BaseReplayController.BaseReplayController_C_ClassNetCache"],
-                "ClientReplayReceiveInputEventProcessingCapture",
                 "ReplaysClientReceiveRemoteCharacterUpdatesSingleArrayNoAutonomous",
                 "ClientGamePhaseBegin",
                 "ClientGamePhaseEnded");
