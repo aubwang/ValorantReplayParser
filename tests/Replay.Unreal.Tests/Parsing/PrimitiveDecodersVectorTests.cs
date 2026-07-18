@@ -162,6 +162,45 @@ public class PrimitiveDecodersVectorTests
         });
     }
 
+    [Test]
+    public void RepMovement_DecodesByteQuantizedRotation()
+    {
+        var archive = CreateArchive(writer =>
+        {
+            writer.WriteBit(false);
+            writer.WriteBit(false);
+            writer.WriteBit(false);
+            writer.WriteBit(false);
+            writer.WriteQuantizedVector(1.23, -4.56, 7.89, scaleFactor: 100, componentBitCount: 11);
+            writer.WriteCompressedByteRotatorComponent(64);
+            writer.WriteCompressedByteRotatorComponent(128);
+            writer.WriteCompressedByteRotatorComponent(192);
+            writer.WriteQuantizedVector(10, -2, 3, scaleFactor: 1, componentBitCount: 6);
+        });
+        var context = new FieldDecodeContext();
+
+        var value = PrimitiveDecoders
+            .RepMovementWithRotation(ERotatorQuantization.ByteComponents)
+            .Decode(ref context, archive);
+        var movement = value.RepMovementValue;
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(movement.Rotation!.Value.Pitch, Is.EqualTo(90).Within(1e-6));
+            Assert.That(movement.Rotation.Value.Yaw, Is.EqualTo(180).Within(1e-6));
+            Assert.That(movement.Rotation.Value.Roll, Is.EqualTo(270).Within(1e-6));
+            AssertVector(movement.LinearVelocity!.Value, 10, -2, 3);
+            Assert.That(archive.AtEnd, Is.True);
+        });
+    }
+
+    [Test]
+    public void RepMovementWithRotation_UnsupportedQuantization_Throws()
+    {
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+            PrimitiveDecoders.RepMovementWithRotation((ERotatorQuantization)int.MaxValue));
+    }
+
     [TestCase(1, 10.0, -2.0, 3.0, 6)]
     [TestCase(10, 1.2, -3.4, 5.6, 7)]
     [TestCase(100, 1.23, -4.56, 7.89, 11)]
@@ -270,6 +309,15 @@ public class PrimitiveDecodersVectorTests
             if (value != 0)
             {
                 WriteUInt16(value);
+            }
+        }
+
+        public void WriteCompressedByteRotatorComponent(byte value)
+        {
+            WriteBit(value != 0);
+            if (value != 0)
+            {
+                WriteByte(value);
             }
         }
 

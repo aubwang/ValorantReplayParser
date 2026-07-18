@@ -66,6 +66,12 @@ internal static class ArchiveVectorReaders
             ReadCompressedShortRotatorComponent(archive),
             ReadCompressedShortRotatorComponent(archive));
 
+    public static FRotator ReadRotationByte(FBitArchive archive) =>
+        new(
+            ReadCompressedByteRotatorComponent(archive),
+            ReadCompressedByteRotatorComponent(archive),
+            ReadCompressedByteRotatorComponent(archive));
+
     public static FQuat ReadQuaternion(FBitArchive archive) => new(archive.ReadSingle(), archive.ReadSingle(),
         archive.ReadSingle(), archive.ReadSingle());
 
@@ -124,9 +130,18 @@ internal static class ArchiveVectorReaders
     private static float ReadCompressedShortRotatorComponent(FBitArchive archive) =>
         archive.ReadBit() ? DecompressShortAngle(archive.ReadUInt16()) : 0.0f;
 
+    private static float ReadCompressedByteRotatorComponent(FBitArchive archive) =>
+        archive.ReadBit() ? DecompressByteAngle(archive.ReadByte()) : 0.0f;
+
     private static float DecompressShortAngle(ushort value)
     {
         const float scale = 360.0f / 65536.0f;
+        return value * scale;
+    }
+
+    private static float DecompressByteAngle(byte value)
+    {
+        const float scale = 360.0f / 256.0f;
         return value * scale;
     }
 }

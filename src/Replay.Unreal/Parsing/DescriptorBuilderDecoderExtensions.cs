@@ -1,4 +1,5 @@
 using Replay.Models.Descriptors;
+using Replay.Models.Unreal;
 
 namespace Replay.Unreal.Parsing;
 
@@ -52,8 +53,10 @@ public static class DescriptorBuilderDecoderExtensions
     public static FieldDescriptorBuilder Transform(this FieldDescriptorBuilder builder) =>
         builder.Decode(PrimitiveDecoders.Transform);
 
-    public static FieldDescriptorBuilder ReplicatedMovement(this FieldDescriptorBuilder builder) =>
-        builder.Decode(PrimitiveDecoders.RepMovement);
+    public static FieldDescriptorBuilder ReplicatedMovement(
+        this FieldDescriptorBuilder builder,
+        ERotatorQuantization rotationQuantization = ERotatorQuantization.ShortComponents) =>
+        builder.Decode(PrimitiveDecoders.RepMovementWithRotation(rotationQuantization));
 
     public static FieldDescriptorBuilder FVectorNetQuantize(this FieldDescriptorBuilder builder) =>
         builder.Decode(PrimitiveDecoders.VectorNetQuantize);

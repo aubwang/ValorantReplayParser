@@ -29,11 +29,23 @@ public static class PrimitiveDecoders
     public static readonly IFieldDecoder Transform = VectorDecoders.Transform;
     public static readonly IFieldDecoder EnumRemainingBits = new EnumRemainingBitsDecoder();
     public static readonly IFieldDecoder GameplayTag = new GameplayTagDecoder();
-    public static readonly IFieldDecoder RepMovement = new ReplicatedMovementDecoder();
+    public static readonly IFieldDecoder RepMovement = new ReplicatedMovementDecoder(
+        ERotatorQuantization.ShortComponents);
+    public static readonly IFieldDecoder RepMovementByte = new ReplicatedMovementDecoder(
+        ERotatorQuantization.ByteComponents);
     public static readonly IFieldDecoder Skip = new SkipDecoder();
 
     public static IFieldDecoder SerializedInt(int maxValue) => new SerializedIntDecoder(maxValue);
     public static IFieldDecoder ByteArray(int maxBytes) => new ByteArrayDecoder(maxBytes);
+
+    public static IFieldDecoder RepMovementWithRotation(ERotatorQuantization rotationQuantization) =>
+        rotationQuantization switch
+        {
+            ERotatorQuantization.ByteComponents => RepMovementByte,
+            ERotatorQuantization.ShortComponents => RepMovement,
+            _ => throw new ArgumentOutOfRangeException(
+                nameof(rotationQuantization), rotationQuantization, null),
+        };
 
     private sealed class FloatVectorDecoder : IFieldDecoder
     {
@@ -190,6 +202,13 @@ public static class PrimitiveDecoders
 
     private sealed class ReplicatedMovementDecoder : IFieldDecoder
     {
+        private readonly ERotatorQuantization _rotationQuantization;
+
+        public ReplicatedMovementDecoder(ERotatorQuantization rotationQuantization)
+        {
+            _rotationQuantization = rotationQuantization;
+        }
+
         public DecodedFieldValue Decode(ref FieldDecodeContext context, FBitArchive archive)
         {
             var bSimulatedPhysicsSleep = archive.ReadBit();
@@ -197,7 +216,13 @@ public static class PrimitiveDecoders
             var bRepServerFrame = archive.ReadBit();
             var bRepServerHandle = archive.ReadBit();
             var location = VectorNetQuantize100.Decode(ref context, archive).VectorValue;
-            var rotation = RotatorShort.Decode(ref context, archive).RotatorValue;
+            var rotation = _rotationQuantization switch
+            {
+                ERotatorQuantization.ByteComponents => ArchiveVectorReaders.ReadRotationByte(archive),
+                ERotatorQuantization.ShortComponents => ArchiveVectorReaders.ReadRotationShort(archive),
+                _ => throw new InvalidOperationException(
+                    $"Unsupported rotation quantization '{_rotationQuantization}'."),
+            };
             var linearVelocity = VectorNetQuantize.Decode(ref context, archive).VectorValue;
             FVector? angularVelocity = null;
             uint serverFrame = 0;
