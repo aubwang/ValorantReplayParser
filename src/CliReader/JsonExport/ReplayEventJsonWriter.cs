@@ -158,7 +158,7 @@ internal sealed class ReplayEventJsonWriter
         writer.WriteEndObject();
     }
 
-    private void WriteEquippable(Utf8JsonWriter writer, ValorantEquippable? equippable)
+    private static void WriteEquippable(Utf8JsonWriter writer, ValorantEquippable? equippable)
     {
         if (equippable is null)
         {
