@@ -29,7 +29,7 @@ try
     var replayPath = args[0];
     logger.LogInformation("Reading replay {ReplayPath}", replayPath);
 
-    using var file = File.OpenRead(replayPath);
+    await using var file = File.OpenRead(replayPath);
     using var archive = new FBinaryArchive(file);
 
     var context = ValorantReplayReader.CreateDefault(
@@ -44,8 +44,8 @@ try
     var guidCacheString = string.Join("\n", guidCache.ExportGroupsByPath.Values.Select(_ =>
         $"{_.PathName}\n\t{string.Join("\n\t", _.NetFieldExports.Where(__ => __?.Name != null).Select(__ => $" {__!.Name} ({__.Handle})"))}"));
 
-    using var writer = File.Create(outPath);
-    writer.Write(Encoding.UTF8.GetBytes(guidCacheString));
+    await using var writer = File.Create(outPath);
+    await writer.WriteAsync(Encoding.UTF8.GetBytes(guidCacheString));
     return 0;
 }
 catch (ReplayParseException exception)
