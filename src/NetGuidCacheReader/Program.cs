@@ -55,5 +55,5 @@ catch (ReplayParseException exception)
 }
 finally
 {
-    Log.CloseAndFlush();
+    await Log.CloseAndFlushAsync();
 }
