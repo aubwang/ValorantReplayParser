@@ -71,7 +71,7 @@ public sealed class ValorantReplayReader
         var metadata = CreateMetadata(preamble);
         EnsureFullParseSupported(metadata);
 
-        var netGuidCache = new Replay.Encoding.Net.NetGuidCache();
+        var netGuidCache = new Encoding.Net.NetGuidCache();
         var eventSink = new ValorantShotEventEnricher(_eventSink, netGuidCache);
         var context = new ReplayReaderContext(
             archive,

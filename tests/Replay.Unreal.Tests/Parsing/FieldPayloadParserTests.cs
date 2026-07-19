@@ -381,7 +381,7 @@ public class FieldPayloadParserTests
 
     private sealed class TestPayloadDescriptor : ExportGroupDescriptor<TestPayloadDescriptor>
     {
-        private readonly string _path = "/Game/Test.Test_C";
+        private readonly string _path;
 
         public TestPayloadDescriptor()
             : this("/Game/Test.Test_C")

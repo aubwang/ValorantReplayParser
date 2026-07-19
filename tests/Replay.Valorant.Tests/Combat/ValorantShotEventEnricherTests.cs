@@ -68,7 +68,7 @@ public class ValorantShotEventEnricherTests
     {
         var sink = new CapturingReplayEventSink();
         var cache = new NetGuidCache();
-        cache.SetNetGuidPath(368, "FiringState", new Replay.Models.Net.NetworkGuid(369));
+        cache.SetNetGuidPath(368, "FiringState", new Models.Net.NetworkGuid(369));
         cache.SetNetGuidPath(369, "BasePistol_FXC_AltFire");
         var enricher = new ValorantShotEventEnricher(sink, cache);
 
