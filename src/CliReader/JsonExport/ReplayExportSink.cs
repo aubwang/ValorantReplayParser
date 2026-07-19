@@ -53,7 +53,7 @@ internal sealed class ReplayExportSink :
                 Statistics.ActorSpawnedCount++;
                 break;
             case ActorClosed closed:
-                _events.Write(writer => _eventWriter.WriteActorClosed(writer, closed));
+                _events.Write(writer => ReplayEventJsonWriter.WriteActorClosed(writer, closed));
                 Statistics.ActorClosedCount++;
                 break;
             case ExportGroupReceived exportGroup:
@@ -68,44 +68,14 @@ internal sealed class ReplayExportSink :
                 Statistics.ValorantShotReceivedCount++;
                 break;
             case RemoteCharacterMovementReceived movement:
-                var move = movement.Move;
-                EmitRemoteCharacterMovement(
-                    movement.TimeSeconds,
-                    movement.PacketId,
-                    movement.ActorNetGuid,
-                    movement.ObjectNetGuid,
-                    movement.ChannelIndex,
-                    movement.UpdateIndex,
-                    movement.ShooterCharacterNetGuidValue,
-                    movement.MoveIndex,
-                    in move);
+                EmitRemoteCharacterMovement(movement);
                 break;
         }
     }
 
-    public void EmitRemoteCharacterMovement(
-        float timeSeconds,
-        int packetId,
-        uint actorNetGuid,
-        uint objectNetGuid,
-        uint channelIndex,
-        int updateIndex,
-        uint shooterCharacterNetGuidValue,
-        int moveIndex,
-        in MovementMove move)
+    public void EmitRemoteCharacterMovement(RemoteCharacterMovementReceived movement)
     {
-        var value = move;
-        _movement.Write(writer => _eventWriter.WriteMovement(
-            writer,
-            timeSeconds,
-            packetId,
-            actorNetGuid,
-            objectNetGuid,
-            channelIndex,
-            updateIndex,
-            shooterCharacterNetGuidValue,
-            moveIndex,
-            value));
+        _movement.Write(writer => _eventWriter.WriteMovement(writer, movement));
         Statistics.MovementCount++;
     }
 

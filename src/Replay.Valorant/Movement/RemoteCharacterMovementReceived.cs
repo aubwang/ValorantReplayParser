@@ -4,16 +4,7 @@ namespace Replay.Valorant.Movement;
 
 public interface IRemoteCharacterMovementSink
 {
-    void EmitRemoteCharacterMovement(
-        float timeSeconds,
-        int packetId,
-        uint actorNetGuid,
-        uint objectNetGuid,
-        uint channelIndex,
-        int updateIndex,
-        uint shooterCharacterNetGuidValue,
-        int moveIndex,
-        in MovementMove move);
+    void EmitRemoteCharacterMovement(RemoteCharacterMovementReceived movement);
 }
 
 public sealed record RemoteCharacterMovementReceived(

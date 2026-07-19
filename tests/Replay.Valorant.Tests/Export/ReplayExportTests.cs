@@ -171,7 +171,8 @@ public class ReplayExportTests
         using (var sink = CreateSink(events, movement))
         {
             var move = Movement();
-            sink.EmitRemoteCharacterMovement(1.25f, 99, 100, 101, 7, 3, 1234, 4, in move);
+            var movementReceived = new RemoteCharacterMovementReceived(1.25f, 99, 100, 101, 7, 3, 1234, 4, move);
+            sink.EmitRemoteCharacterMovement(movementReceived);
         }
 
         var documents = ParseLines(movement);

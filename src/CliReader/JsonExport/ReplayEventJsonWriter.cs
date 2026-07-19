@@ -33,7 +33,7 @@ internal sealed class ReplayEventJsonWriter
         writer.WriteEndObject();
     }
 
-    public void WriteActorClosed(Utf8JsonWriter writer, ActorClosed closed)
+    public static void WriteActorClosed(Utf8JsonWriter writer, ActorClosed closed)
     {
         WriteEventStart(writer, "actor_closed", closed);
         writer.WriteNumber("actor_net_guid", closed.ActorNetGuid);
@@ -121,23 +121,15 @@ internal sealed class ReplayEventJsonWriter
     }
 
     public void WriteMovement(
-        Utf8JsonWriter writer,
-        float timeSeconds,
-        int packetId,
-        uint actorNetGuid,
-        uint objectNetGuid,
-        uint channelIndex,
-        int updateIndex,
-        uint shooterCharacterNetGuid,
-        int moveIndex,
-        MovementMove move)
+        Utf8JsonWriter writer, RemoteCharacterMovementReceived movement)
     {
+        var move = movement.Move;
         writer.WriteStartObject();
-        WriteEventDiscriminator(writer, "remote_character_movement", timeSeconds, packetId);
-        WriteObjectIdentity(writer, actorNetGuid, objectNetGuid, channelIndex);
-        writer.WriteNumber("shooter_character_net_guid", shooterCharacterNetGuid);
-        writer.WriteNumber("update_index", updateIndex);
-        writer.WriteNumber("move_index", moveIndex);
+        WriteEventDiscriminator(writer, "remote_character_movement", movement.TimeSeconds, movement.PacketId);
+        WriteObjectIdentity(writer, movement.ActorNetGuid, movement.ObjectNetGuid, movement.ChannelIndex);
+        writer.WriteNumber("shooter_character_net_guid", movement.ShooterCharacterNetGuidValue);
+        writer.WriteNumber("update_index", movement.UpdateIndex);
+        writer.WriteNumber("move_index", movement.MoveIndex);
         writer.WritePropertyName("position");
         ReplayJsonNormalizer.WriteVector(writer, move.Position);
         writer.WriteNumber("yaw", move.Yaw);
