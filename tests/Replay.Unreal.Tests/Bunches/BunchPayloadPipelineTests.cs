@@ -1,5 +1,4 @@
 using System.Buffers.Binary;
-using JetBrains.Annotations;
 using Replay.Encoding.Archives;
 using Replay.Models.Descriptors;
 using Replay.Models.Errors;
@@ -1365,7 +1364,7 @@ public class BunchPayloadPipelineTests
         public override ExportCategory Categories => ExportCategory.Debug;
         public override ExportGroupKind Kind => ExportGroupKind.Actor;
 
-        public int FieldA { get; [UsedImplicitly] set; }
+        public int FieldA { get; set; }
 
         protected override void Configure()
         {

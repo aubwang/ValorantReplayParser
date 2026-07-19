@@ -1,4 +1,3 @@
-using JetBrains.Annotations;
 using Replay.Models.Descriptors;
 
 namespace Replay.Models.Tests.Descriptors;
@@ -87,8 +86,8 @@ public class DescriptorCatalogTests
         public override ExportGroupKind Kind => ExportGroupKind.Actor;
 
         public float BaseValue { get; set; }
-        public float CurrentValue { get; [UsedImplicitly] set; }
-        public bool IsActive { get; [UsedImplicitly] set; }
+        public float CurrentValue { get; set; }
+        public bool IsActive { get; set; }
 
         protected override void Configure()
         {

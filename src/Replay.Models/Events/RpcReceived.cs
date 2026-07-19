@@ -1,9 +1,7 @@
-using JetBrains.Annotations;
 using Replay.Models.Descriptors;
 
 namespace Replay.Models.Events;
 
-[UsedImplicitly]
 public sealed record RpcReceived(
     float TimeSeconds,
     int PacketId,

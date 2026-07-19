@@ -1,9 +1,7 @@
-using JetBrains.Annotations;
 using Replay.Models.Events;
 
 namespace Replay.Valorant.Movement;
 
-[UsedImplicitly]
 public interface IRemoteCharacterMovementSink
 {
     void EmitRemoteCharacterMovement(
@@ -18,7 +16,6 @@ public interface IRemoteCharacterMovementSink
         in MovementMove move);
 }
 
-[UsedImplicitly]
 public sealed record RemoteCharacterMovementReceived(
     float TimeSeconds,
     int PacketId,

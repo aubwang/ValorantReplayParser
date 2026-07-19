@@ -1,4 +1,3 @@
-using JetBrains.Annotations;
 using Replay.Models.Descriptors;
 using Replay.Models.Unreal;
 using Replay.Unreal.Parsing;
@@ -10,18 +9,18 @@ public abstract class GenericAgentDescriptor : ExportGroupDescriptor<GenericAgen
     public override ExportCategory Categories => ExportCategory.Agent;
     public override ExportGroupKind Kind => ExportGroupKind.Actor;
 
-    public bool ReplicateMovement { get; [UsedImplicitly] set; }
-    public uint Role { get; [UsedImplicitly] set; }
-    public uint RemoteRole { get; [UsedImplicitly] set; }
-    public uint Owner { get; [UsedImplicitly] set; }
-    public uint Instigator { get; [UsedImplicitly] set; }
-    public uint PlayerState { get; [UsedImplicitly] set; }
-    public uint Controller { get; [UsedImplicitly] set; }
-    public float ReplayLastTransformUpdateTimeStamp { get; [UsedImplicitly] set; }
-    public FVector ReplicatedGravityDirection { get; [UsedImplicitly] set; }
-    public uint ReplicatedMovementMode { get; [UsedImplicitly] set; }
-    public bool IsPlayerCharacter { get; [UsedImplicitly] set; }
-    public bool CrouchHeld { get; [UsedImplicitly] set; }
+    public bool ReplicateMovement { get; set; }
+    public uint Role { get; set; }
+    public uint RemoteRole { get; set; }
+    public uint Owner { get; set; }
+    public uint Instigator { get; set; }
+    public uint PlayerState { get; set; }
+    public uint Controller { get; set; }
+    public float ReplayLastTransformUpdateTimeStamp { get; set; }
+    public FVector ReplicatedGravityDirection { get; set; }
+    public uint ReplicatedMovementMode { get; set; }
+    public bool IsPlayerCharacter { get; set; }
+    public bool CrouchHeld { get; set; }
 
     protected override void Configure()
     {

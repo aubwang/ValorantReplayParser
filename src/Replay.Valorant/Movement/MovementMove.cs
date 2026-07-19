@@ -1,9 +1,7 @@
-using JetBrains.Annotations;
 using Replay.Models.Unreal;
 
 namespace Replay.Valorant.Movement;
 
-[UsedImplicitly]
 public readonly record struct MovementMove(
     int Marker,
     byte MoveType,

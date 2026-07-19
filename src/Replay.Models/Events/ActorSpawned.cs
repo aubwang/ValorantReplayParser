@@ -1,9 +1,7 @@
-using JetBrains.Annotations;
 using Replay.Models.Unreal;
 
 namespace Replay.Models.Events;
 
-[UsedImplicitly]
 public sealed record ActorSpawned(
     float TimeSeconds,
     int PacketId,

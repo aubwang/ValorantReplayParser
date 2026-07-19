@@ -1,4 +1,3 @@
-using JetBrains.Annotations;
 using Replay.Models.Descriptors;
 using Replay.Models.Net;
 using Replay.Unreal.Parsing;
@@ -360,10 +359,10 @@ public class ExportBindingRegistryTests
         public override ExportCategory Categories => ExportCategory.Ability;
         public override ExportGroupKind Kind => ExportGroupKind.Actor;
 
-        public int FieldA { get; [UsedImplicitly] set; }
-        public uint FieldB { get; [UsedImplicitly] set; }
-        public bool IsActive { get; [UsedImplicitly] set; }
-        public int NoDecoderField { get; [UsedImplicitly] set; }
+        public int FieldA { get; set; }
+        public uint FieldB { get; set; }
+        public bool IsActive { get; set; }
+        public int NoDecoderField { get; set; }
 
         protected override void Configure()
         {
@@ -380,7 +379,7 @@ public class ExportBindingRegistryTests
         public override ExportCategory Categories => ExportCategory.Movement;
         public override ExportGroupKind Kind => ExportGroupKind.Actor;
 
-        public float FieldOne { get; [UsedImplicitly] set; }
+        public float FieldOne { get; set; }
 
         protected override void Configure()
         {
@@ -394,7 +393,7 @@ public class ExportBindingRegistryTests
         public override ExportCategory Categories => ExportCategory.Ability;
         public override ExportGroupKind Kind => ExportGroupKind.Actor;
 
-        public int BaseField { get; [UsedImplicitly] set; }
+        public int BaseField { get; set; }
 
         protected override void Configure()
         {
@@ -409,7 +408,7 @@ public class ExportBindingRegistryTests
         public override ExportGroupKind Kind => ExportGroupKind.Actor;
         public override string BasePath => "/Game/Base.Base_C";
 
-        public bool DerivedField { get; [UsedImplicitly] set; }
+        public bool DerivedField { get; set; }
 
         protected override void Configure()
         {
@@ -451,7 +450,7 @@ public class ExportBindingRegistryTests
         public override ExportGroupKind Kind => ExportGroupKind.ClassNetCache;
         public override FieldStreamGrammar Grammar => FieldStreamGrammar.FunctionParameters;
 
-        public float Param1 { get; [UsedImplicitly] set; }
+        public float Param1 { get; set; }
 
         protected override void Configure()
         {
