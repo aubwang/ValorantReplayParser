@@ -24,13 +24,13 @@ internal sealed class ActorEventLogger : IReplayEventSink
         _logger = logger;
     }
 
-    public int SpawnedCount { get; private set; }
-    public int ClosedCount { get; private set; }
-    public int DestroyedCloseCount { get; private set; }
-    public int ExportGroupCount { get; private set; }
-    public int SkippedExportGroupCount { get; private set; }
-    public int RpcCount { get; private set; }
-    public int DecodedFieldCount { get; private set; }
+    private int SpawnedCount { get; set; }
+    private int ClosedCount { get; set; }
+    private int DestroyedCloseCount { get; set; }
+    private int ExportGroupCount { get; set; }
+    private int SkippedExportGroupCount { get; set; }
+    private int RpcCount { get; set; }
+    private int DecodedFieldCount { get; set; }
 
     public void Emit(ReplayEvent replayEvent)
     {
@@ -188,7 +188,7 @@ internal sealed class ActorEventLogger : IReplayEventSink
 
         _actors.TryGetValue(closed.ActorNetGuid, out var identity);
         var lifetime = identity?.SpawnTimeSeconds is { } spawnTime
-            ? FormattableString.Invariant($"{closed.TimeSeconds - spawnTime:F3}s")
+            ? string.Create(CultureInfo.InvariantCulture, $"{closed.TimeSeconds - spawnTime:F3}s")
             : "unknown";
 
         _logger.LogInformation(
@@ -273,7 +273,7 @@ internal sealed class ActorEventLogger : IReplayEventSink
             .Select(field => $"{field.Name ?? field.ExportName ?? $"handle:{field.Handle}"}={FormatValue(field.Value)}");
         var formatted = string.Join(", ", values);
         return fields.Count > maxFields
-            ? formatted + FormattableString.Invariant($", ... +{fields.Count - maxFields}")
+            ? formatted + string.Create(CultureInfo.InvariantCulture, $", ... +{fields.Count - maxFields}")
             : formatted;
     }
 
@@ -286,7 +286,7 @@ internal sealed class ActorEventLogger : IReplayEventSink
         DecodedFieldValueKind.Float => value.FloatValue.ToString("G", CultureInfo.InvariantCulture),
         DecodedFieldValueKind.Double => value.DoubleValue.ToString("G", CultureInfo.InvariantCulture),
         DecodedFieldValueKind.String => value.StringValue ?? string.Empty,
-        DecodedFieldValueKind.NetGuid => FormattableString.Invariant($"net:{value.NetGuidValue}"),
+        DecodedFieldValueKind.NetGuid => string.Create(CultureInfo.InvariantCulture, $"net:{value.NetGuidValue}"),
         DecodedFieldValueKind.Vector => FormatVector(value.VectorValue),
         DecodedFieldValueKind.Rotator => FormatRotator(value.RotatorValue),
         DecodedFieldValueKind.Object => value.ObjectValue?.ToString() ?? "<null>",
@@ -313,7 +313,7 @@ internal sealed class ActorEventLogger : IReplayEventSink
                 ? "<no decoded properties>"
                 : string.Join(", ", values);
             var suffix = decodedPayload.DecodedProperties.Count > values.Length
-                ? FormattableString.Invariant($", ... +{decodedPayload.DecodedProperties.Count - values.Length}")
+                ? string.Create(CultureInfo.InvariantCulture, $", ... +{decodedPayload.DecodedProperties.Count - values.Length}")
                 : string.Empty;
             return $"{type.Name}({formattedValues}{suffix})";
         }
@@ -327,13 +327,13 @@ internal sealed class ActorEventLogger : IReplayEventSink
         bool boolValue => boolValue ? "true" : "false",
         byte byteValue => byteValue.ToString("G", CultureInfo.InvariantCulture),
         int intValue => intValue.ToString("G", CultureInfo.InvariantCulture),
-        uint uintValue => FormattableString.Invariant($"net:{uintValue}"),
+        uint uintValue => string.Create(CultureInfo.InvariantCulture, $"net:{uintValue}"),
         float floatValue => floatValue.ToString("G", CultureInfo.InvariantCulture),
         double doubleValue => doubleValue.ToString("G", CultureInfo.InvariantCulture),
         string stringValue => stringValue,
         FVector vector => FormatVector(vector),
         FRotator rotator => FormatRotator(rotator),
-        byte[] bytes => FormattableString.Invariant($"byte[{bytes.Length}]"),
+        byte[] bytes => string.Create(CultureInfo.InvariantCulture, $"byte[{bytes.Length}]"),
         _ => value.ToString() ?? value.GetType().Name,
     };
 
@@ -341,10 +341,10 @@ internal sealed class ActorEventLogger : IReplayEventSink
         vector is { } value ? FormatVector(value) : "<unknown>";
 
     private static string FormatVector(FVector vector) =>
-        FormattableString.Invariant($"({vector.X:F1}, {vector.Y:F1}, {vector.Z:F1})");
+        string.Create(CultureInfo.InvariantCulture, $"({vector.X:F1}, {vector.Y:F1}, {vector.Z:F1})");
 
     private static string FormatRotator(FRotator rotator) =>
-        FormattableString.Invariant($"({rotator.Pitch:F1}, {rotator.Yaw:F1}, {rotator.Roll:F1})");
+        string.Create(CultureInfo.InvariantCulture, $"({rotator.Pitch:F1}, {rotator.Yaw:F1}, {rotator.Roll:F1})");
 
     private sealed record ActorIdentity(
         string? ActorPath,
