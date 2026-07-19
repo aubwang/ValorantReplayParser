@@ -5,7 +5,6 @@ using Replay.Encoding.PayloadEncryption;
 using Replay.Models.Descriptors;
 using Replay.Models.Errors;
 using Replay.Models.Events;
-using Replay.Models.Replay;
 using Replay.Unreal.Chunks;
 using Replay.Unreal.Readers;
 using Replay.Valorant.Combat;

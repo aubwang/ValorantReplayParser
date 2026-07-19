@@ -1,7 +1,5 @@
 using Replay.Encoding.Archives;
-using Replay.Models.Descriptors;
 using Replay.Unreal.Parsing;
-using Replay.Valorant.Descriptors;
 using Replay.Valorant.GameState;
 
 namespace Replay.Valorant.Tests.GameState;

@@ -3,7 +3,6 @@ using Replay.Encoding.Archives;
 using Replay.Models.Net;
 using Replay.Unreal.Parsing;
 using Replay.Valorant.Combat;
-using Replay.Valorant.Descriptors;
 
 namespace Replay.Valorant.Tests.Combat;
 
