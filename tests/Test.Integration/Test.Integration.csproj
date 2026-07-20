@@ -59,6 +59,9 @@
       <None Update="__snapshots__\ReplayReaderIntegrationTests.ReadReplayInfo_13_00_MatchesSnapshot.snap">
         <CopyToOutputDirectory>Never</CopyToOutputDirectory>
       </None>
+      <None Update="Replays\viper_wall.vrf">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </None>
     </ItemGroup>
 
     <ItemGroup>

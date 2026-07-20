@@ -57,6 +57,7 @@ public static class ValorantDescriptors
         catalog.Add(MageDescriptors.CreateDescriptors());
         catalog.Add(NoxDescriptors.CreateDescriptors());
         catalog.Add(PandemicDescriptors.CreateDescriptors());
+        catalog.Add(PandemicDescriptors.CreateClassNetCacheDescriptors());
         catalog.Add(PhoenixDescriptors.CreateDescriptors());
         catalog.Add(PineDescriptors.CreateDescriptors());
         catalog.Add(RiftDescriptors.CreateDescriptors());

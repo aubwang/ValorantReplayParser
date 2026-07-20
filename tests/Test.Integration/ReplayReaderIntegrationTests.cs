@@ -26,7 +26,7 @@ public class ReplayReaderIntegrationTests
     [Test]
     public void ReadMetadata_12_08_ReturnsUnsupportedVersionWithoutReadingReplayData()
     {
-        var archive = new FBinaryArchive(ReadReplayBytes(Replay12_08));
+        var archive = new FBinaryArchive(TestHelper.ReadReplayBytes(Replay12_08));
 
         var metadata = new ValorantReplayReader().ReadMetadata(archive);
 
@@ -91,7 +91,7 @@ public class ReplayReaderIntegrationTests
     [Test]
     public void ReadRawPackets_12_11_EmitsTimedParserEvents()
     {
-        var replayBytes = ReadReplayBytes("5c673443-5bdc-4576-b416-aab3f62471a5.12_11.vrf");
+        var replayBytes = TestHelper.ReadReplayBytes("5c673443-5bdc-4576-b416-aab3f62471a5.12_11.vrf");
         var eventSink = new CapturingReplayEventSink();
         var context = new ValorantReplayReader(
             new OozSharpOodleDecompressor(),
@@ -118,7 +118,7 @@ public class ReplayReaderIntegrationTests
 
     private static void ReadReplayInfoMatchesSnapshot(string replayFileName)
     {
-        var replayBytes = ReadReplayBytes(replayFileName);
+        var replayBytes = TestHelper.ReadReplayBytes(replayFileName);
         var context = ReadReplayMetadata(replayBytes);
 
         Snapshot.Match(CreateReplayInfoSnapshot(replayFileName, context));
@@ -126,7 +126,7 @@ public class ReplayReaderIntegrationTests
 
     private static void ReadReplayReportsUnsupportedVersion(string replayFileName, string branch)
     {
-        var replayBytes = ReadReplayBytes(replayFileName);
+        var replayBytes = TestHelper.ReadReplayBytes(replayFileName);
         var exception = Assert.Throws<InvalidReplayInfoException>(() => ReadReplay(replayBytes));
 
         Assert.Multiple(() =>
@@ -138,7 +138,7 @@ public class ReplayReaderIntegrationTests
 
     private static void ReadReplayHeaderMatchesSnapshot(string replayFileName)
     {
-        var replayBytes = ReadReplayBytes(replayFileName);
+        var replayBytes = TestHelper.ReadReplayBytes(replayFileName);
         var headerBytes = ReadHeaderPayload(replayBytes);
         var headerArchive = new FBinaryArchive(headerBytes);
 
@@ -149,7 +149,7 @@ public class ReplayReaderIntegrationTests
 
     private static void DecompressReplayDataMaterializesExpectedSize(string replayFileName)
     {
-        var replayBytes = ReadReplayBytes(replayFileName);
+        var replayBytes = TestHelper.ReadReplayBytes(replayFileName);
         var replayDataHandler = new CountingReplayDataChunkHandler();
         var archive = new FBinaryArchive(replayBytes);
 
@@ -164,7 +164,7 @@ public class ReplayReaderIntegrationTests
 
     private static void ReadRawPacketsRecordsStats(string replayFileName, int expectedPartialErrors, int expectedMalformedPayloads)
     {
-        var replayBytes = ReadReplayBytes(replayFileName);
+        var replayBytes = TestHelper.ReadReplayBytes(replayFileName);
         var context = ReadReplay(replayBytes);
         var stats = context.PacketStats;
         var payloadStats = context.BunchPayloadStats;
@@ -206,11 +206,7 @@ public class ReplayReaderIntegrationTests
             descriptorCatalog: ValorantDescriptors.CreateCatalog()).Read(archive);
     }
 
-    private static byte[] ReadReplayBytes(string replayFileName)
-    {
-        var path = Path.Combine(TestContext.CurrentContext.TestDirectory, "Replays", replayFileName);
-        return File.ReadAllBytes(path);
-    }
+
 
     private static byte[] ReadHeaderPayload(byte[] replayBytes)
     {
