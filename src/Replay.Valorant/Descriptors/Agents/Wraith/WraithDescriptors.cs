@@ -9,6 +9,7 @@ public static class WraithDescriptors
         return
         [
             new WraithAgentDescriptor(),
+            new DarkCoverAbilityDescriptor(),
         ];
     }
 }
