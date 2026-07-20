@@ -10,6 +10,7 @@ public static class MageDescriptors
         [
             new MageAgentDescriptor(),
             new MageWallDescriptor(),
+            new CoveAbilityDescriptor(),
         ];
     }
 }
