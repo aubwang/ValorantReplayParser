@@ -18,7 +18,7 @@ public sealed class MageWallDescriptor : ExportGroupDescriptor<MageWallDescripto
     protected override void Configure()
     {
         AddProperty(x => x.ReplicatedMovement)
-            .FRepMovement(ERotatorQuantization.ByteComponents);
+            .ReplicatedMovement(ERotatorQuantization.ByteComponents);
         AddProperty(x => x.Owner).ObjectNetGuid();
         AddProperty(x => x.Instigator).ObjectNetGuid();
     }

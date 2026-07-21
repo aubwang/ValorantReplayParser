@@ -16,7 +16,7 @@ public sealed class BaseReplayControllerDescriptor : ExportGroupDescriptor<BaseR
 
     protected override void Configure()
     {
-        AddProperty(x => x.PlayerState).ObjectNetGuidOrRaw();
+        AddProperty(x => x.PlayerState).ObjectNetGuid();
         AddProperty(x => x.RemoteCharacterUpdatesArray);
         AddProperty(x => x.SpawnLocation).FVector();
     }

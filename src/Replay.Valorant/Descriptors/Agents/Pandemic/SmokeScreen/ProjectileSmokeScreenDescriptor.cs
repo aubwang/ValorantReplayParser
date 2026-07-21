@@ -16,7 +16,7 @@ public class ProjectileSmokeScreenDescriptor : ExportGroupDescriptor<ProjectileS
     protected override void Configure()
     {
         AddProperty(x => x.Owner).ObjectNetGuid();
-        AddProperty(x => x.ReplicatedMovement).FRepMovement();
+        AddProperty(x => x.ReplicatedMovement).ReplicatedMovement();
         AddProperty(x => x.Instigator).ObjectNetGuid();
     }
 }

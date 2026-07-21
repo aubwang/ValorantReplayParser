@@ -17,6 +17,6 @@ public class CoveAbilityDescriptor : ExportGroupDescriptor<CoveAbilityDescriptor
     {
         AddProperty(x => x.Owner).ObjectNetGuid();
         AddProperty(x => x.Instigator).ObjectNetGuid();
-        AddProperty(x => x.ReplicatedMovement).FRepMovement();
+        AddProperty(x => x.ReplicatedMovement).ReplicatedMovement();
     }
 }

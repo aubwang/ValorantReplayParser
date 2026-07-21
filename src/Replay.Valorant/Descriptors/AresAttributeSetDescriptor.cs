@@ -24,9 +24,9 @@ public sealed class AresAttributeSetDescriptor : ExportGroupDescriptor<AresAttri
         AddProperty(x => x.MaxHealth, ExportCategory.Ability).Float();
         AddProperty(x => x.Shield, ExportCategory.Ability).Float();
         AddProperty(x => x.MaxShield, ExportCategory.Ability).Float();
-        AddProperty(x => x.Healing, ExportCategory.Ability).FloatOrRaw();
+        AddProperty(x => x.Healing, ExportCategory.Ability).Float();
         AddProperty(x => x.Damage, ExportCategory.Ability).Float();
-        AddProperty(x => x.BaseValue, ExportCategory.Ability).FloatOrRaw();
-        AddProperty(x => x.CurrentValue, ExportCategory.Ability).FloatOrRaw();
+        AddProperty(x => x.BaseValue, ExportCategory.Ability).Float();
+        AddProperty(x => x.CurrentValue, ExportCategory.Ability).Float();
     }
 }

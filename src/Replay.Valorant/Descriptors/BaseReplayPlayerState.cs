@@ -26,7 +26,7 @@ public sealed class BaseReplayPlayerState : ExportGroupDescriptor<BaseReplayPlay
             .Decode(ValorantPayloadDecoders.RawPayload("TArray<FObfuscatedPlayerInformation>"));
         AddProperty(x => x.SubjectUniqueId)
             .Decode(ValorantPayloadDecoders.RawPayload("FUniqueNetIdRepl"));
-        AddProperty("bIsAfk", x => x.IsAfk).BoolOrRaw();
-        AddProperty(x => x.ConnectionStatus).EnumByteOrRaw();
+        AddProperty("bIsAfk", x => x.IsAfk).Bool();
+        AddProperty(x => x.ConnectionStatus).EnumByte();
     }
 }

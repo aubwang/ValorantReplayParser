@@ -20,10 +20,10 @@ public sealed class FlameWallDescriptor : ExportGroupDescriptor<FlameWallDescrip
     protected override void Configure()
     {
         AddProperty(x => x.ReplicatedMovement)
-            .FRepMovement(ERotatorQuantization.ByteComponents);
+            .ReplicatedMovement(ERotatorQuantization.ByteComponents);
         AddProperty(x => x.Owner).ObjectNetGuid();
         AddProperty(x => x.Instigator).ObjectNetGuid();
-        AddProperty("215", x => x.A).Int32OrRaw();
-        AddProperty("216", x => x.B).Int32OrRaw();
+        AddProperty("215", x => x.A).Int32();
+        AddProperty("216", x => x.B).Int32();
     }
 }

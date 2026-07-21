@@ -1,5 +1,5 @@
 using Replay.Models.Descriptors;
-using Replay.Valorant.Descriptors;
+using Replay.Unreal.Parsing;
 
 namespace Replay.Valorant.GameState;
 
@@ -60,7 +60,7 @@ internal sealed class MulticastNotifySetLifeParameters
 
     protected override void Configure()
     {
-        AddProperty(x => x.NewLife).FloatOrRaw();
-        AddProperty("bNewAlive", x => x.NewAlive).BoolOrRaw();
+        AddProperty(x => x.NewLife).Float();
+        AddProperty("bNewAlive", x => x.NewAlive).Bool();
     }
 }
