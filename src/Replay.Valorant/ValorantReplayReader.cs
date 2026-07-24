@@ -28,6 +28,7 @@ public sealed class ValorantReplayReader
     private readonly DescriptorCatalog? _descriptorCatalog;
     private readonly ParseProfile _parseProfile;
     private readonly ILoggerFactory? _loggerFactory;
+    private readonly IRepLayoutFieldOccurrenceSink? _fieldOccurrenceSink;
 
     public ValorantReplayReader(
         IOodleDecompressor? oodleDecompressor = null,
@@ -35,13 +36,15 @@ public sealed class ValorantReplayReader
         IReplayEventSink? eventSink = null,
         DescriptorCatalog? descriptorCatalog = null,
         ParseProfile? parseProfile = null,
-        ILoggerFactory? loggerFactory = null)
+        ILoggerFactory? loggerFactory = null,
+        IRepLayoutFieldOccurrenceSink? fieldOccurrenceSink = null)
     {
         _chunkDispatcher = new ReplayChunkDispatcher(oodleDecompressor, replayDataChunkHandler);
         _eventSink = eventSink ?? NullReplayEventSink.Instance;
         _descriptorCatalog = descriptorCatalog;
         _parseProfile = parseProfile ?? ParseProfile.Default;
         _loggerFactory = loggerFactory;
+        _fieldOccurrenceSink = fieldOccurrenceSink;
     }
     
     public static ValorantReplayReader CreateMinimal(
@@ -54,7 +57,8 @@ public sealed class ValorantReplayReader
     public static ValorantReplayReader CreateDefault(
         ILoggerFactory? loggerFactory,
         IReplayEventSink? eventSink = null,
-        ParseProfile? parseProfile = null)
+        ParseProfile? parseProfile = null,
+        IRepLayoutFieldOccurrenceSink? fieldOccurrenceSink = null)
     {
         return new ValorantReplayReader(
             new OozSharpOodleDecompressor(),
@@ -62,7 +66,8 @@ public sealed class ValorantReplayReader
             eventSink,
             ValorantDescriptors.CreateCatalog(),
             parseProfile,
-            loggerFactory);
+            loggerFactory,
+            fieldOccurrenceSink);
     }
 
     public ReplayReaderContext Read(FBinaryArchive archive)
@@ -79,7 +84,8 @@ public sealed class ValorantReplayReader
             _descriptorCatalog,
             _parseProfile,
             _loggerFactory,
-            netGuidCache);
+            netGuidCache,
+            _fieldOccurrenceSink);
         context.ReplayInfo = metadata.ReplayInfo;
         context.ReplayInfoSerializationMetadata = metadata.ReplayInfoSerializationMetadata;
         context.ReplayHeader = metadata.ReplayHeader;

@@ -11,12 +11,15 @@ public sealed class ComponentDataStream
     private const double AngleScale = 360.0 / 65536.0;
     private const int MaxMovementPaddingBits = 31;
 
+    private readonly List<MovementMove> _moves = [];
+
     public bool HasMovementSection { get; private set; }
     public bool HasValidMovementMagic { get; private set; }
     public string? MovementParseError { get; private set; }
     public int MoveCount { get; private set; }
     public bool HasLatestMove { get; private set; }
     public MovementMove LatestMove { get; private set; }
+    public IReadOnlyList<MovementMove> Moves => _moves;
 
     public static ComponentDataStream Decode(FBitArchive archive)
     {
@@ -129,6 +132,7 @@ public sealed class ComponentDataStream
             }
 
             MoveCount++;
+            _moves.Add(move);
             LatestMove = move;
             HasLatestMove = true;
 

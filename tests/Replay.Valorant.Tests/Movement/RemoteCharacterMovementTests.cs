@@ -91,7 +91,7 @@ public class RemoteCharacterMovementTests
     }
 
     [Test]
-    public void ComponentDataStream_DecodesAllMovesButKeepsOnlyLatestMove()
+    public void ComponentDataStream_DecodesAllMovesAndKeepsLatestMove()
     {
         var payload = BuildComponentDataStreamPayload(useByteWrapper: false, includeSecondMove: true);
         using var archive = new BitArchiveReader(payload.Bytes, payload.BitCount);
@@ -102,6 +102,11 @@ public class RemoteCharacterMovementTests
         {
             Assert.That(stream.MovementParseError, Is.Null);
             Assert.That(stream.MoveCount, Is.EqualTo(2));
+            Assert.That(stream.Moves, Has.Count.EqualTo(2));
+            Assert.That(stream.Moves[0].Marker, Is.EqualTo(1));
+            Assert.That(stream.Moves[0].Timestamp, Is.EqualTo(42));
+            Assert.That(stream.Moves[1].Marker, Is.EqualTo(2));
+            Assert.That(stream.Moves[1].Timestamp, Is.EqualTo(84));
             Assert.That(stream.HasLatestMove, Is.True);
             Assert.That(stream.LatestMove.Marker, Is.EqualTo(2));
             Assert.That(stream.LatestMove.Timestamp, Is.EqualTo(84));
@@ -111,10 +116,10 @@ public class RemoteCharacterMovementTests
     }
 
     [Test]
-    public void RemoteCharacterUpdatesRpcDecoder_DecodesBatchAndEmitsMovementEvent()
+    public void RemoteCharacterUpdatesRpcDecoder_DecodesBatchAndEmitsEveryMovementEvent()
     {
         var decoder = GetRemoteCharacterUpdatesDecoder();
-        var payload = BuildRemoteCharacterUpdatesRpcPayload();
+        var payload = BuildRemoteCharacterUpdatesRpcPayload(includeSecondMove: true);
         using var archive = new BitArchiveReader(payload.Bytes, payload.BitCount);
         var eventSink = new CapturingReplayEventSink();
         var context = new FieldDecodeContext
@@ -137,11 +142,15 @@ public class RemoteCharacterMovementTests
             Assert.That(result.DiagnosticFields, Is.Empty);
             Assert.That(batch.Updates, Has.Count.EqualTo(1));
             Assert.That(batch.Updates[0].ShooterCharacterNetGuidValue, Is.EqualTo(1234));
-            Assert.That(batch.Updates[0].ComponentDataStream!.MoveCount, Is.EqualTo(1));
+            Assert.That(batch.Updates[0].ComponentDataStream!.MoveCount, Is.EqualTo(2));
             Assert.That(batch.Updates[0].ComponentDataStream!.HasLatestMove, Is.True);
-            Assert.That(movementEvents, Has.Length.EqualTo(1));
+            Assert.That(movementEvents, Has.Length.EqualTo(2));
             Assert.That(movementEvents[0].ShooterCharacterNetGuidValue, Is.EqualTo(1234));
+            Assert.That(movementEvents[0].MoveIndex, Is.EqualTo(0));
             Assert.That(movementEvents[0].Move.Timestamp, Is.EqualTo(42));
+            Assert.That(movementEvents[1].ShooterCharacterNetGuidValue, Is.EqualTo(1234));
+            Assert.That(movementEvents[1].MoveIndex, Is.EqualTo(1));
+            Assert.That(movementEvents[1].Move.Timestamp, Is.EqualTo(84));
             Assert.That(archive.AtEnd, Is.True);
         });
     }
@@ -156,9 +165,11 @@ public class RemoteCharacterMovementTests
         return (IRpcDecoder)rpc.Decoder!;
     }
 
-    private static PayloadData BuildRemoteCharacterUpdatesRpcPayload()
+    private static PayloadData BuildRemoteCharacterUpdatesRpcPayload(bool includeSecondMove = false)
     {
-        var componentDataStream = BuildComponentDataStreamPayload(useByteWrapper: false);
+        var componentDataStream = BuildComponentDataStreamPayload(
+            useByteWrapper: false,
+            includeSecondMove: includeSecondMove);
 
         var update = new BitWriter();
         update.WriteIntPacked(3);

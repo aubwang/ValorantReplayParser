@@ -18,8 +18,24 @@ public class FieldPayloadParser
         FBitArchive payload,
         BoundExportGroup boundGroup,
         ref FieldDecodeContext context,
-        bool readPropertyChecksum = true)
+        bool readPropertyChecksum = true,
+        bool captureFieldOccurrences = false)
     {
+        if (captureFieldOccurrences &&
+            boundGroup.Grammar is not FieldStreamGrammar.RepLayoutProperties)
+        {
+            GetLogger(context).LogWarning(
+                "Export group '{ExportGroupPath}' uses unsupported grammar '{FieldStreamGrammar}' for field-occurrence capture.",
+                context.ExportGroupPath ?? boundGroup.SourceDescriptor.Path,
+                boundGroup.Grammar);
+            payload.SkipRemaining();
+            return DecodedPayloadResult.Empty with
+            {
+                FieldStreamStatus =
+                    RepLayoutFieldStreamStatus.UnsupportedGrammar,
+            };
+        }
+
         if (boundGroup.Grammar is FieldStreamGrammar.ClassNetCache)
         {
             GetLogger(context).LogWarning(
@@ -31,29 +47,72 @@ public class FieldPayloadParser
 
         if (readPropertyChecksum)
         {
-            _ = payload.ReadBit();
+            if (!captureFieldOccurrences)
+            {
+                _ = payload.ReadBit();
+            }
+            else if (!payload.TryReadBit(out _))
+            {
+                return DecodedPayloadResult.Empty with
+                {
+                    FieldStreamStatus =
+                        RepLayoutFieldStreamStatus.MalformedFieldHeader,
+                };
+            }
         }
 
         context.CaptureDiagnosticFields = boundGroup.CaptureDiagnosticFields;
         var payloadObject = boundGroup.CreatePayloadInstance();
         var decodedFieldCount = 0;
         List<DecodedReplayField>? diagnosticFields = context.CaptureDiagnosticFields ? [] : null;
+        List<RepLayoutFieldOccurrence>? fieldOccurrences = captureFieldOccurrences ? [] : null;
+        var fieldStreamStatus = RepLayoutFieldStreamStatus.MissingTerminator;
         while (!payload.AtEnd)
         {
             if (boundGroup.Grammar is FieldStreamGrammar.FunctionParameters && payload.BitsRemaining == 1)
             {
                 payload.SkipBits(1);
+                fieldStreamStatus = RepLayoutFieldStreamStatus.Complete;
                 break;
             }
 
-            if (ParseProperty(payload, boundGroup, payloadObject, ref context, ref decodedFieldCount, diagnosticFields))
+            var outcome = ParseProperty(
+                payload,
+                boundGroup,
+                payloadObject,
+                ref context,
+                ref decodedFieldCount,
+                diagnosticFields,
+                fieldOccurrences);
+            if (outcome is PropertyParseOutcome.Continue)
             {
-                return CreateDecodedPayloadResult(payloadObject, decodedFieldCount, diagnosticFields ?? [],
-                    ref context);
+                continue;
             }
+
+            fieldStreamStatus = outcome switch
+            {
+                PropertyParseOutcome.Terminated =>
+                    RepLayoutFieldStreamStatus.Complete,
+                PropertyParseOutcome.MalformedFieldHeader =>
+                    RepLayoutFieldStreamStatus.MalformedFieldHeader,
+                _ => RepLayoutFieldStreamStatus.InvalidFieldLength,
+            };
+            return CreateDecodedPayloadResult(
+                payloadObject,
+                decodedFieldCount,
+                diagnosticFields ?? [],
+                fieldOccurrences ?? [],
+                fieldStreamStatus,
+                ref context);
         }
 
-        return CreateDecodedPayloadResult(payloadObject, decodedFieldCount, diagnosticFields ?? [], ref context);
+        return CreateDecodedPayloadResult(
+            payloadObject,
+            decodedFieldCount,
+            diagnosticFields ?? [],
+            fieldOccurrences ?? [],
+            fieldStreamStatus,
+            ref context);
     }
 
     public IReadOnlyList<DecodedRpcInvocation> ParseClassNetCachePayload(
@@ -159,25 +218,64 @@ public class FieldPayloadParser
         return invocations;
     }
 
-    private bool ParseProperty(
+    private PropertyParseOutcome ParseProperty(
         FBitArchive payload,
         BoundExportGroup boundGroup,
         object payloadObject,
         ref FieldDecodeContext context,
         ref int decodedFieldCount,
-        List<DecodedReplayField>? diagnosticFields)
+        List<DecodedReplayField>? diagnosticFields,
+        List<RepLayoutFieldOccurrence>? fieldOccurrences)
     {
-        var encodedHandle = payload.ReadIntPacked();
-        if (encodedHandle == 0)
+        uint encodedHandle;
+        if (fieldOccurrences is null)
         {
-            return true;
+            encodedHandle = payload.ReadIntPacked();
+        }
+        else if (!TryReadCanonicalIntPacked(payload, out encodedHandle))
+        {
+            GetLogger(context).LogWarning(
+                "Malformed field header while reading the packed handle.");
+            return PropertyParseOutcome.MalformedFieldHeader;
         }
 
-        var handle = checked((int)(encodedHandle - 1));
-        var payloadBits = payload.ReadIntPacked();
+        if (encodedHandle == 0)
+        {
+            return PropertyParseOutcome.Terminated;
+        }
+
+        var wireHandle = encodedHandle - 1;
+        int handle;
+        uint payloadBits;
+        if (fieldOccurrences is null)
+        {
+            handle = checked((int)wireHandle);
+            payloadBits = payload.ReadIntPacked();
+        }
+        else if (wireHandle > int.MaxValue ||
+                 !TryReadCanonicalIntPacked(payload, out payloadBits))
+        {
+            GetLogger(context).LogWarning(
+                "Malformed field header: handle={Handle}.",
+                wireHandle);
+            payload.SkipRemaining();
+            return PropertyParseOutcome.MalformedFieldHeader;
+        }
+        else
+        {
+            handle = (int)wireHandle;
+        }
+        var fieldBinding = GetBinding(handle, boundGroup);
+        fieldOccurrences?.Add(new RepLayoutFieldOccurrence(
+            wireHandle,
+            fieldBinding.WireExported,
+            fieldBinding.WireExportName,
+            fieldBinding.WireCompatibleChecksum,
+            payloadBits != 0,
+            GetBindingStatus(fieldBinding)));
         if (payloadBits == 0)
         {
-            return false;
+            return PropertyParseOutcome.Continue;
         }
 
         if (payloadBits > int.MaxValue || payload.BitsRemaining < payloadBits)
@@ -188,14 +286,13 @@ public class FieldPayloadParser
                 payloadBits,
                 payload.BitsRemaining);
             payload.SkipRemaining();
-            return true;
+            return PropertyParseOutcome.InvalidFieldLength;
         }
 
-        var fieldBinding = GetBinding(handle, boundGroup);
         if (!fieldBinding.Enabled || fieldBinding.Decoder is null)
         {
             payload.SkipBits(payloadBits);
-            return false;
+            return PropertyParseOutcome.Continue;
         }
 
         context.FieldName = fieldBinding.Name;
@@ -240,7 +337,7 @@ public class FieldPayloadParser
             throw;
         }
 
-        return false;
+        return PropertyParseOutcome.Continue;
     }
 
     private FieldBinding GetBinding(int handle, BoundExportGroup boundGroup)
@@ -253,10 +350,60 @@ public class FieldPayloadParser
         return default;
     }
 
+    private static RepLayoutFieldBindingStatus GetBindingStatus(FieldBinding binding)
+    {
+        if (!binding.WireExported)
+        {
+            return RepLayoutFieldBindingStatus.Unavailable;
+        }
+
+        return binding.Enabled && binding.Decoder is not null
+            ? RepLayoutFieldBindingStatus.Enabled
+            : RepLayoutFieldBindingStatus.Disabled;
+    }
+
+    private static bool TryReadCanonicalIntPacked(
+        FBitArchive payload,
+        out uint value)
+    {
+        value = 0;
+        var shift = 0;
+        for (var index = 0; index < 5; index++)
+        {
+            if (!payload.TryReadByte(out var nextByte))
+            {
+                payload.SkipRemaining();
+                return false;
+            }
+
+            var data = (uint)(nextByte >> 1);
+            var continues = (nextByte & 1) != 0;
+            if (index == 4 && (continues || data > 0x0f) ||
+                !continues && index > 0 && data == 0)
+            {
+                payload.SkipRemaining();
+                return false;
+            }
+
+            value |= data << shift;
+            if (!continues)
+            {
+                return true;
+            }
+
+            shift += 7;
+        }
+
+        payload.SkipRemaining();
+        return false;
+    }
+
     private static DecodedPayloadResult CreateDecodedPayloadResult(
         object payloadObject,
         int decodedFieldCount,
         IReadOnlyList<DecodedReplayField> diagnosticFields,
+        IReadOnlyList<RepLayoutFieldOccurrence> fieldOccurrences,
+        RepLayoutFieldStreamStatus fieldStreamStatus,
         ref FieldDecodeContext context)
     {
         if (payloadObject is IDecodedPayloadEventEmitter eventEmitter)
@@ -264,9 +411,24 @@ public class FieldPayloadParser
             eventEmitter.EmitDecodedEvents(ref context);
         }
 
-        return new DecodedPayloadResult(payloadObject, decodedFieldCount, diagnosticFields);
+        return new DecodedPayloadResult(
+            payloadObject,
+            decodedFieldCount,
+            diagnosticFields)
+        {
+            FieldOccurrences = fieldOccurrences,
+            FieldStreamStatus = fieldStreamStatus,
+        };
     }
 
     private static ILogger<FieldPayloadParser> GetLogger(FieldDecodeContext context) =>
         context.LoggerFactory?.CreateLogger<FieldPayloadParser>() ?? NullLogger<FieldPayloadParser>.Instance;
+
+    private enum PropertyParseOutcome
+    {
+        Continue,
+        Terminated,
+        MalformedFieldHeader,
+        InvalidFieldLength,
+    }
 }

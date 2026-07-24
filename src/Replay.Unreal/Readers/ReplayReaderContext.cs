@@ -20,7 +20,8 @@ public class ReplayReaderContext
         DescriptorCatalog? descriptorCatalog = null,
         ParseProfile? parseProfile = null,
         ILoggerFactory? loggerFactory = null,
-        NetGuidCache? netGuidCache = null)
+        NetGuidCache? netGuidCache = null,
+        IRepLayoutFieldOccurrenceSink? fieldOccurrenceSink = null)
     {
         Archive = archive;
         BunchPayloadStats = new BunchPayloadStats();
@@ -28,6 +29,7 @@ public class ReplayReaderContext
         ParseProfile = parseProfile ?? ParseProfile.Default;
         LoggerFactory = loggerFactory;
         NetGuidCache = netGuidCache ?? new NetGuidCache();
+        FieldOccurrenceSink = fieldOccurrenceSink;
         ExportBindingRegistry = new ExportBindingRegistry(descriptorCatalog, ParseProfile);
         BunchPayloadPipeline = new BunchPayloadPipeline(this);
     }
@@ -44,6 +46,7 @@ public class ReplayReaderContext
     internal RawPacketReader RawPacketReader { get; } = new();
     public BunchPayloadStats BunchPayloadStats { get; }
     public IReplayEventSink EventSink { get; }
+    public IRepLayoutFieldOccurrenceSink? FieldOccurrenceSink { get; }
     public float CurrentTimeSeconds { get; internal set; }
     public Dictionary<uint, ActorChannelState> ChannelStates { get; } = [];
     public List<ActorChannelState> ActorChannelOpens { get; } = [];

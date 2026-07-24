@@ -39,7 +39,8 @@ internal sealed class ReplayExportBinder
             }
 
             var h = handle.Value;
-            var exportName = fieldDesc.ExportName ?? replayGroup.NetFieldExports[h]?.Name;
+            var wireExport = replayGroup.NetFieldExports[h];
+            var exportName = fieldDesc.ExportName ?? wireExport?.Name;
             var propertyName = fieldDesc.PropertyName ?? exportName;
             var categories = fieldDesc.Categories == ExportCategory.None
                 ? descriptor.Categories
@@ -52,6 +53,9 @@ internal sealed class ReplayExportBinder
             fields[h] = new FieldBinding
             {
                 Enabled = enabled,
+                WireExported = wireExport is not null,
+                WireExportName = wireExport?.Name,
+                WireCompatibleChecksum = wireExport?.CompatibleChecksum,
                 Categories = categories,
                 Decoder = enabled ? decoder : null,
                 Name = propertyName,
@@ -64,11 +68,15 @@ internal sealed class ReplayExportBinder
         {
             if (fields[i].Name is null && fields[i].Decoder is null)
             {
+                var wireExport = replayGroup.NetFieldExports[i];
                 fields[i] = new FieldBinding
                 {
                     Enabled = false,
-                    Name = replayGroup.NetFieldExports[i]?.Name,
-                    ExportName = replayGroup.NetFieldExports[i]?.Name,
+                    WireExported = wireExport is not null,
+                    WireExportName = wireExport?.Name,
+                    WireCompatibleChecksum = wireExport?.CompatibleChecksum,
+                    Name = wireExport?.Name,
+                    ExportName = wireExport?.Name,
                 };
             }
         }

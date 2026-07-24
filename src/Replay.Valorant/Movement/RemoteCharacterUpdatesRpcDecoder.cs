@@ -167,24 +167,28 @@ internal sealed class RemoteCharacterUpdatesRpcDecoder : IRpcDecoder
 
         foreach (var update in batch.Updates)
         {
-            if (update is not { ShooterCharacterNetGuidValue: { } shooterGuid, ComponentDataStream: { HasLatestMove: true } componentDataStream })
+            if (update is not
+                {
+                    ShooterCharacterNetGuidValue: { } shooterGuid,
+                    ComponentDataStream.Moves: { Count: > 0 } moves,
+                })
             {
                 continue;
             }
 
-            var moveIndex = componentDataStream.MoveCount - 1;
-            var move = componentDataStream.LatestMove;
-
-            context.EventSink.Emit(new RemoteCharacterMovementReceived(
-                context.CurrentTimeSeconds,
-                context.CurrentPacketId,
-                context.ActorNetGuid.Value,
-                context.ObjectNetGuid.Value,
-                context.ChannelIndex,
-                update.Index,
-                shooterGuid,
-                moveIndex,
-                move));
+            for (var moveIndex = 0; moveIndex < moves.Count; moveIndex++)
+            {
+                context.EventSink.Emit(new RemoteCharacterMovementReceived(
+                    context.CurrentTimeSeconds,
+                    context.CurrentPacketId,
+                    context.ActorNetGuid.Value,
+                    context.ObjectNetGuid.Value,
+                    context.ChannelIndex,
+                    update.Index,
+                    shooterGuid,
+                    moveIndex,
+                    moves[moveIndex]));
+            }
         }
     }
 
