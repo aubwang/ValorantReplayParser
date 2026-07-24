@@ -21,6 +21,7 @@ internal sealed class ContentBlockFramer
     private readonly FieldPayloadParser _fieldPayloadParser;
     private readonly ExportBindingRegistry _bindingRegistry;
     private readonly IPropertyPayloadDecoder? _propertyPayloadDecoder;
+    private readonly IRepLayoutFieldOccurrenceSink? _fieldOccurrenceSink;
     private readonly ILoggerFactory? _loggerFactory;
 
     public ContentBlockFramer(
@@ -37,6 +38,7 @@ internal sealed class ContentBlockFramer
             fieldPayloadParser,
             bindingRegistry,
             propertyPayloadDecoder,
+            fieldOccurrenceSink: null,
             loggerFactory: null)
     {
     }
@@ -52,6 +54,7 @@ internal sealed class ContentBlockFramer
             new FieldPayloadParser(),
             context.ExportBindingRegistry,
             propertyPayloadDecoder,
+            context.FieldOccurrenceSink,
             context.LoggerFactory)
     {
     }
@@ -63,6 +66,7 @@ internal sealed class ContentBlockFramer
         FieldPayloadParser fieldPayloadParser,
         ExportBindingRegistry? bindingRegistry,
         IPropertyPayloadDecoder? propertyPayloadDecoder,
+        IRepLayoutFieldOccurrenceSink? fieldOccurrenceSink,
         ILoggerFactory? loggerFactory)
     {
         _headerReader = new ContentBlockHeaderReader(packageMapReader);
@@ -72,6 +76,7 @@ internal sealed class ContentBlockFramer
         _fieldPayloadParser = fieldPayloadParser;
         _bindingRegistry = bindingRegistry ?? new ExportBindingRegistry();
         _propertyPayloadDecoder = propertyPayloadDecoder;
+        _fieldOccurrenceSink = fieldOccurrenceSink;
         _loggerFactory = loggerFactory;
     }
 
@@ -118,15 +123,18 @@ internal sealed class ContentBlockFramer
         FBitArchive payload,
         int bitCount,
         ActorChannelState channel,
-        string replayVersionBranch)
+        string replayVersionBranch,
+        out bool transformApplied)
     {
         if (_propertyPayloadDecoder is null ||
             !channel.ActorNetGuid.IsValid ||
             string.IsNullOrWhiteSpace(replayVersionBranch))
         {
+            transformApplied = false;
             return payload.ReadSubArchive(bitCount);
         }
 
+        transformApplied = true;
         return _propertyPayloadDecoder.Decode(payload, bitCount, channel.ActorNetGuid.Value, replayVersionBranch);
     }
 
@@ -221,9 +229,20 @@ internal sealed class ContentBlockFramer
             return;
         }
 
+        var captureOccurrences =
+            _fieldOccurrenceSink?.ShouldCapture(exportGroupPath) == true;
         var boundGroup = _bindingRegistry.GetBoundGroup(exportGroupPath);
         if (boundGroup is null || !boundGroup.Enabled)
         {
+            if (captureOccurrences)
+            {
+                _fieldOccurrenceSink!.RecordBlock(
+                    new RepLayoutFieldOccurrenceBlock(
+                        exportGroupPath,
+                        RepLayoutFieldStreamStatus.GroupNotParsed,
+                        []));
+            }
+
             SkipContentPayload(payload, payloadBits, stats);
             EmitExportGroupReceived(
                 timeSeconds,
@@ -242,13 +261,94 @@ internal sealed class ContentBlockFramer
             return;
         }
 
-        using var decodedPayload = DecodeContentPayload(payload, payloadBits, channel, replayVersionBranch);
+        if (captureOccurrences &&
+            boundGroup.Grammar is not FieldStreamGrammar.RepLayoutProperties)
+        {
+            SkipContentPayload(payload, payloadBits, stats);
+            _fieldOccurrenceSink!.RecordBlock(
+                new RepLayoutFieldOccurrenceBlock(
+                    exportGroupPath,
+                    RepLayoutFieldStreamStatus.UnsupportedGrammar,
+                    []));
+            EmitExportGroupReceived(
+                timeSeconds,
+                packetId,
+                channel,
+                header,
+                exportGroupPath,
+                boundGroup.SourceDescriptor.Kind,
+                boundGroup.Categories,
+                payloadBits,
+                parsedBits: 0,
+                wasDecoded: false,
+                payload: null,
+                decodedFieldCount: 0,
+                diagnosticFields: []);
+            return;
+        }
+
+        using var decodedPayload = DecodeContentPayload(
+            payload,
+            payloadBits,
+            channel,
+            replayVersionBranch,
+            out var transformApplied);
+        if (captureOccurrences && !transformApplied)
+        {
+            decodedPayload.SkipRemaining();
+            stats.ContentPayloadBitsSkipped += payloadBits;
+            _fieldOccurrenceSink!.RecordBlock(
+                new RepLayoutFieldOccurrenceBlock(
+                    exportGroupPath,
+                    RepLayoutFieldStreamStatus.TransformNotApplied,
+                    []));
+            EmitExportGroupReceived(
+                timeSeconds,
+                packetId,
+                channel,
+                header,
+                exportGroupPath,
+                boundGroup.SourceDescriptor.Kind,
+                boundGroup.Categories,
+                payloadBits,
+                parsedBits: 0,
+                wasDecoded: false,
+                payload: null,
+                decodedFieldCount: 0,
+                diagnosticFields: []);
+            return;
+        }
+
         var context = CreateDecodeContext(exportGroupPath, channel, header, timeSeconds, packetId);
         var beforeRepLayout = decodedPayload.BitsRemaining;
-        var result = _fieldPayloadParser.ParseRepLayoutProperties(decodedPayload, boundGroup, ref context);
+        var result = _fieldPayloadParser.ParseRepLayoutProperties(
+            decodedPayload,
+            boundGroup,
+            ref context,
+            captureFieldOccurrences: captureOccurrences);
         var parsedBits = checked((int)(beforeRepLayout - decodedPayload.BitsRemaining));
         stats.ContentPayloadBitsParsed += parsedBits;
+        var captureStatus = result.FieldStreamStatus;
+        if (captureOccurrences)
+        {
+            if (captureStatus is RepLayoutFieldStreamStatus.Complete &&
+                !decodedPayload.AtEnd)
+            {
+                captureStatus = RepLayoutFieldStreamStatus.TrailingBits;
+            }
 
+            _fieldOccurrenceSink!.RecordBlock(
+                new RepLayoutFieldOccurrenceBlock(
+                    exportGroupPath,
+                    captureStatus,
+                    captureStatus is RepLayoutFieldStreamStatus.Complete
+                        ? result.FieldOccurrences
+                        : []));
+        }
+
+        var acceptedCapture =
+            !captureOccurrences ||
+            captureStatus is RepLayoutFieldStreamStatus.Complete;
         EmitExportGroupReceived(
             timeSeconds,
             packetId,
@@ -259,10 +359,10 @@ internal sealed class ContentBlockFramer
             boundGroup.Categories,
             payloadBits,
             parsedBits,
-            wasDecoded: true,
-            result.Payload,
-            result.DecodedFieldCount,
-            result.DiagnosticFields);
+            wasDecoded: acceptedCapture,
+            acceptedCapture ? result.Payload : null,
+            acceptedCapture ? result.DecodedFieldCount : 0,
+            acceptedCapture ? result.DiagnosticFields : []);
     }
 
     private void FrameClassNetCacheContentBlock(
@@ -322,7 +422,12 @@ internal sealed class ContentBlockFramer
             return;
         }
 
-        using var decodedPayload = DecodeContentPayload(payload, payloadBits, channel, replayVersionBranch);
+        using var decodedPayload = DecodeContentPayload(
+            payload,
+            payloadBits,
+            channel,
+            replayVersionBranch,
+            out _);
         var context = CreateDecodeContext(classPath, channel, header, timeSeconds, packetId);
         var beforeClassNetCache = decodedPayload.BitsRemaining;
         var invocations = _fieldPayloadParser.ParseClassNetCachePayload(decodedPayload, boundCache, ref context);
@@ -377,17 +482,17 @@ internal sealed class ContentBlockFramer
         ContentBlockHeader header,
         float timeSeconds,
         int packetId) => new()
-    {
-        NetGuidCache = _netGuidCache,
-        LoggerFactory = _loggerFactory,
-        EventSink = _eventSink,
-        CurrentPacketId = packetId,
-        CurrentTimeSeconds = timeSeconds,
-        ChannelIndex = channel.ChannelIndex,
-        ActorNetGuid = channel.ActorNetGuid,
-        ObjectNetGuid = GetObjectNetGuid(header, channel),
-        ExportGroupPath = exportGroupPath,
-    };
+        {
+            NetGuidCache = _netGuidCache,
+            LoggerFactory = _loggerFactory,
+            EventSink = _eventSink,
+            CurrentPacketId = packetId,
+            CurrentTimeSeconds = timeSeconds,
+            ChannelIndex = channel.ChannelIndex,
+            ActorNetGuid = channel.ActorNetGuid,
+            ObjectNetGuid = GetObjectNetGuid(header, channel),
+            ExportGroupPath = exportGroupPath,
+        };
 
     private void EmitExportGroupReceived(
         float timeSeconds,

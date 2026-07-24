@@ -6,6 +6,9 @@ namespace Replay.Unreal.Parsing;
 public struct FieldBinding
 {
     public bool Enabled;
+    public bool WireExported;
+    public string? WireExportName;
+    public uint? WireCompatibleChecksum;
     public ExportCategory Categories;
     public IFieldDecoder? Decoder;
     public string? Name;
