@@ -17,6 +17,7 @@
 
     <ItemGroup>
       <InternalsVisibleTo Include="ValorantReplay" />
+      <InternalsVisibleTo Include="ValorantReplay.Tests" />
     </ItemGroup>
 
 </Project>
